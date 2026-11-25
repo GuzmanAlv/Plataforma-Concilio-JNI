@@ -67,8 +67,9 @@ class _NewMemberDialogState extends State<NewMemberDialog> {
       firstDate: first.toDateTime(),
       lastDate: last.toDateTime(),
     );
-    if (date != null && mounted)
+    if (date != null && mounted) {
       setState(() => controller.text = DateFormat('dd/MM/yyyy').format(date));
+    }
   }
 
   Future<void> _save() async {
@@ -88,11 +89,12 @@ class _NewMemberDialogState extends State<NewMemberDialog> {
       );
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _error =
               'No se pudo confirmar el registro. Revisa la conexión, tus permisos y el listado antes de volver a enviarlo.',
         );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
