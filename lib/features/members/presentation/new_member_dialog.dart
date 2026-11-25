@@ -72,6 +72,7 @@ class _NewMemberDialogState extends State<NewMemberDialog> {
   }
 
   Future<void> _save() async {
+    if (_busy) return;
     if (!_form.currentState!.validate() || widget.onSave == null) return;
     setState(() {
       _busy = true;
