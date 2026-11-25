@@ -10,6 +10,8 @@ import '../../../shared/widgets/section_header.dart';
 import '../../groups/domain/group.dart';
 import '../application/members_providers.dart';
 import '../data/supabase_members_repository.dart';
+import '../../../core/supabase/supabase_providers.dart';
+import 'new_member_dialog.dart';
 
 class MembersPage extends ConsumerStatefulWidget {
   const MembersPage({super.key});
@@ -21,13 +23,52 @@ class _MembersPageState extends ConsumerState<MembersPage> {
   String _search = '';
   GroupId? _group;
 
+  Future<void> _add() async {
+    final client = ref.read(supabaseClientProvider);
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => NewMemberDialog(
+        onSave: client == null
+            ? null
+            : (name, birth, group, role, start) async {
+                await SupabaseMembersRepository(client).create(
+                  fullName: name,
+                  birthDate: birth,
+                  groupId: group,
+                  role: role,
+                  startDate: start,
+                );
+              },
+      ),
+    );
+    if (saved == true && mounted) {
+      ref.invalidate(memberDirectoryProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Integrante registrado correctamente.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const SectionHeader(
+      SectionHeader(
         title: 'Integrantes',
         subtitle: 'Cada nombre es parte de nuestra historia.',
+        trailing:
+            ref.watch(supabaseClientProvider) == null ||
+                [
+                  'admin',
+                  'secretaria',
+                ].contains(ref.watch(profileProvider).asData?.value?['rol'])
+            ? FilledButton.icon(
+                onPressed: _add,
+                icon: const Icon(Icons.person_add_alt_1),
+                label: const Text('Nuevo integrante'),
+              )
+            : null,
       ),
       Wrap(
         spacing: 12,
