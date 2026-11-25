@@ -1,6 +1,6 @@
 # Supabase: esquema y reglas de negocio
 
-La migración `supabase/migrations/202611250001_initial_schema.sql` crea la base del ciclo **1 de noviembre de 2026–31 de octubre de 2027**. No contiene jóvenes ficticios ni credenciales. Requiere un proyecto Supabase con PostgreSQL 15 o posterior por las vistas `security_invoker`.
+La migración `supabase/migrations/20261125164602_concilio_initial_schema.sql` crea la base del ciclo **1 de noviembre de 2026–31 de octubre de 2027**. No contiene jóvenes ficticios ni credenciales. Requiere un proyecto Supabase con PostgreSQL 15 o posterior por las vistas `security_invoker`.
 
 ## Instalación
 

@@ -47,7 +47,7 @@ El APK debug sirve para pruebas; la distribución requiere firma release. La Web
 | Entrega | Ubicación |
 | --- | --- |
 | Arquitectura de carpetas y decisiones | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| SQL completo | [supabase/migrations/202611250001_initial_schema.sql](supabase/migrations/202611250001_initial_schema.sql) |
+| SQL completo | [supabase/migrations/20261125164602_concilio_initial_schema.sql](supabase/migrations/20261125164602_concilio_initial_schema.sql) |
 | Puesta en marcha, permisos y RPC | [docs/SUPABASE.md](docs/SUPABASE.md) |
 | Modelos y contratos de datos | [docs/DOMAIN.md](docs/DOMAIN.md) |
 | Web/Render y APK Android | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
