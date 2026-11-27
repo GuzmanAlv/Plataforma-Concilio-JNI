@@ -3,6 +3,9 @@ import 'package:concilio_jni_dreamrs/features/treasury/presentation/new_expense_
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:concilio_jni_dreamrs/core/domain/civil_date.dart';
+import 'package:concilio_jni_dreamrs/core/domain/money.dart';
+import 'package:concilio_jni_dreamrs/features/treasury/domain/treasury.dart';
 
 Future<void> openForm(
   WidgetTester tester,
@@ -39,6 +42,59 @@ Future<void> fillForm(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets(
+    'Editing keeps the expense identity and can remove the existing receipt',
+    (tester) async {
+      final original = Expense(
+        id: 'existing-expense',
+        date: CivilDate(2026, 11, 28),
+        amount: Money.parse('25'),
+        name: 'Materiales',
+        concept: 'Compra anterior',
+        receiptPath: 'existing/boleta.png',
+      );
+      ExpenseDraft? saved;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => NewExpenseDialog(
+                    initialExpense: original,
+                    onSave: (draft) async {
+                      saved = draft;
+                    },
+                  ),
+                ),
+                child: const Text('Abrir'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Abrir'));
+      await tester.pumpAndSettle();
+      expect(find.text('Editar egreso'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextFormField>(find.byType(TextFormField).at(1))
+            .controller!
+            .text,
+        '25.00',
+      );
+      await tester.enterText(find.byType(TextFormField).at(1), '18.50');
+      await tester.ensureVisible(find.text('Quitar boleta actual'));
+      await tester.tap(find.text('Quitar boleta actual'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar cambios'));
+      await tester.pumpAndSettle();
+      expect(saved!.id, original.id);
+      expect(saved!.amount.cents, 1850);
+      expect(saved!.keepExistingReceipt, false);
+    },
+  );
   testWidgets(
     'Validates required fields, amounts and cycle; photo is optional',
     (tester) async {

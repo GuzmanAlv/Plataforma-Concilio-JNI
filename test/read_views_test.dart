@@ -13,9 +13,86 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:concilio_jni_dreamrs/core/providers/today_provider.dart';
+import 'package:concilio_jni_dreamrs/features/dashboard/application/dashboard_providers.dart';
+import 'package:concilio_jni_dreamrs/features/dashboard/domain/attendance_insights.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('es_PE'));
+
+  testWidgets('Populated dashboard rankings fit narrow mobile screens', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final period = CouncilPeriod.official;
+    final data = AttendanceInsights(
+      members: [
+        Member(
+          id: 'ana',
+          fullName: 'Ana María Pérez de la Cruz',
+          birthDate: CivilDate(2000, 1, 1),
+          active: true,
+        ),
+      ],
+      snapshots: [
+        for (var i = 0; i < 3; i++)
+          AttendanceSnapshot(
+            memberId: 'ana',
+            date: CivilDate(2026, 11, 28).addDays(i * 7),
+            present: false,
+          ),
+      ],
+      points: [],
+      start: period.start,
+      end: period.end,
+      today: CivilDate(2026, 12, 12),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardInsightsProvider((
+            start: period.start,
+            end: period.end,
+          )).overrideWith((ref) async => data),
+        ],
+        child: const ConcilioApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Seguimiento prioritario'), findsOneWidget);
+    expect(find.text('Ana María Pérez de la Cruz'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Expense action is centered below the cash chart', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const ConcilioApp(),
+      ),
+    );
+    container.read(appRouterProvider).go('/tesoreria');
+    await tester.pumpAndSettle();
+    final button = find.widgetWithText(FilledButton, 'Agregar egreso');
+    expect(tester.getCenter(button).dx, closeTo(187.5, 1));
+    expect(
+      tester.getTopLeft(button).dy,
+      greaterThan(
+        tester.getBottomLeft(find.widgetWithText(Card, 'Evolución de caja')).dy,
+      ),
+    );
+  });
 
   testWidgets(
     'New member button is centered below the directory card on mobile',
@@ -55,6 +132,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            todayProvider.overrideWithValue(CivilDate(2026, 12, 6)),
             attendanceSummaryProvider((
               start: period.start,
               end: period.end,
@@ -62,13 +140,13 @@ void main() {
               (ref) async => [
                 for (final group in GroupId.values) ...[
                   AttendancePoint(
-                    date: CivilDate(2026, 11, 7),
+                    date: CivilDate(2026, 11, 28),
                     groupId: group,
                     present: 2,
                     invited: 2,
                   ),
                   AttendancePoint(
-                    date: CivilDate(2026, 11, 14),
+                    date: CivilDate(2026, 12, 5),
                     groupId: group,
                     present: 1,
                     invited: 2,

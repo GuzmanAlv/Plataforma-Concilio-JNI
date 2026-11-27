@@ -7,11 +7,8 @@ import '../../features/auth/presentation/access_gate.dart';
 import '../theme/app_theme.dart';
 
 const appDestinations = <({String path, String label, IconData icon})>[
-  (
-    path: '/asistencia',
-    label: 'Asistencia & Dashboard',
-    icon: Icons.insights_outlined,
-  ),
+  (path: '/dashboard', label: 'Dashboard', icon: Icons.insights_outlined),
+  (path: '/asistencia', label: 'Asistencia', icon: Icons.fact_check_outlined),
   (path: '/integrantes', label: 'Integrantes', icon: Icons.people_outline),
   (
     path: '/tesoreria',
@@ -55,7 +52,7 @@ class ResponsiveShell extends ConsumerWidget {
                         ? const Color(0xFFF0EEFC)
                         : null,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 10,
                       vertical: 14,
                     ),
                   ),

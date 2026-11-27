@@ -1,5 +1,7 @@
 # Arquitectura de Concilio JNI Dreamrs
 
+> La navegación actual incorpora `features/dashboard` como primera pantalla y mantiene `features/attendance` para el registro por meses desde el 28/11/2026. Los indicadores personales y de grupos se calculan sobre convocatorias guardadas. La tabla de tesorería permite editar egresos. Consulta [el flujo actual](DASHBOARD_ATTENDANCE.md).
+
 > Estado actual: se suspendieron los roles de acceso mediante la segunda migración. Flutter verifica la sesión, sin consultar `perfiles`; todas las cuentas autenticadas tienen acceso uniforme. Las referencias a autorización por perfiles describen el diseño inicial conservado como historial.
 
 Esta primera entrega establece el proyecto Flutter para Web y Android, la navegación, los modelos, la conexión de lectura y el contrato de Supabase. Las pantallas se completan por módulo sobre esa base. El periodo oficial es **1 de noviembre de 2026 a 31 de octubre de 2027**; la moneda es **PEN, S/**.

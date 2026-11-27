@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/domain/civil_date.dart';
 import '../../../core/domain/council_period.dart';
 import '../../../core/domain/money.dart';
+import '../domain/treasury.dart';
 
 class ExpensePhoto {
   const ExpensePhoto(this.bytes, this.mimeType, this.filename);
@@ -22,6 +23,7 @@ class ExpenseDraft {
     required this.date,
     required this.amount,
     this.photo,
+    this.keepExistingReceipt = true,
   });
   final String id;
   final String name;
@@ -29,10 +31,17 @@ class ExpenseDraft {
   final CivilDate date;
   final Money amount;
   final ExpensePhoto? photo;
+  final bool keepExistingReceipt;
 }
 
 class NewExpenseDialog extends StatefulWidget {
-  const NewExpenseDialog({this.onSave, this.pickPhoto, super.key});
+  const NewExpenseDialog({
+    this.onSave,
+    this.pickPhoto,
+    this.initialExpense,
+    super.key,
+  });
+  final Expense? initialExpense;
   final Future<void> Function(ExpenseDraft)? onSave;
   final Future<XFile?> Function()? pickPhoto;
   @override
@@ -45,7 +54,8 @@ class _NewExpenseDialogState extends State<NewExpenseDialog> {
   final _description = TextEditingController();
   final _amount = TextEditingController();
   final _date = TextEditingController();
-  final _id = const Uuid().v4();
+  late final String _id;
+  bool _keepExistingReceipt = true;
   bool _busy = false;
   bool _picking = false;
   bool _locked = false;
@@ -57,8 +67,13 @@ class _NewExpenseDialogState extends State<NewExpenseDialog> {
   @override
   void initState() {
     super.initState();
+    final expense = widget.initialExpense;
+    _id = expense?.id ?? const Uuid().v4();
+    _name.text = expense?.name ?? '';
+    _description.text = expense?.concept ?? '';
+    _amount.text = expense?.amount.decimal ?? '';
     final period = CouncilPeriod.official;
-    var today = CivilDate.today();
+    var today = expense?.date ?? CivilDate.today();
     if (today < period.start) today = period.start;
     if (today > period.end) today = period.end;
     _date.text = DateFormat('dd/MM/yyyy').format(today.toDateTime());
@@ -178,6 +193,7 @@ class _NewExpenseDialogState extends State<NewExpenseDialog> {
           date: _parseDate(_date.text)!,
           amount: Money.parse(_amount.text.trim().replaceAll(',', '.')),
           photo: _photo,
+          keepExistingReceipt: _keepExistingReceipt,
         ),
       );
       if (mounted) Navigator.of(context).pop(true);
@@ -206,7 +222,9 @@ class _NewExpenseDialogState extends State<NewExpenseDialog> {
   Widget build(BuildContext context) => PopScope(
     canPop: !_busy,
     child: AlertDialog(
-      title: const Text('Agregar egreso'),
+      title: Text(
+        widget.initialExpense == null ? 'Agregar egreso' : 'Editar egreso',
+      ),
       content: SizedBox(
         width: 460,
         child: SingleChildScrollView(
@@ -320,6 +338,20 @@ class _NewExpenseDialogState extends State<NewExpenseDialog> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                   ),
+                if (_photo == null &&
+                    _keepExistingReceipt &&
+                    widget.initialExpense?.receiptPath != null) ...[
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text('Este egreso tiene una boleta guardada.'),
+                  ),
+                  TextButton(
+                    onPressed: _editable
+                        ? () => setState(() => _keepExistingReceipt = false)
+                        : null,
+                    child: const Text('Quitar boleta actual'),
+                  ),
+                ],
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
@@ -346,7 +378,9 @@ class _NewExpenseDialogState extends State<NewExpenseDialog> {
             _busy
                 ? 'Guardando…'
                 : _error == null
-                ? 'Guardar egreso'
+                ? widget.initialExpense == null
+                      ? 'Guardar egreso'
+                      : 'Guardar cambios'
                 : 'Reintentar guardado',
           ),
         ),

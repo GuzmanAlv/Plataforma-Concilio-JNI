@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/attendance/presentation/attendance_page.dart';
+import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/members/presentation/members_page.dart';
 import '../../features/treasury/presentation/treasury_page.dart';
 import '../../features/inventory/presentation/inventory_page.dart';
@@ -10,13 +11,14 @@ import '../shell/responsive_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
-    initialLocation: '/asistencia',
+    initialLocation: '/dashboard',
     routes: [
-      GoRoute(path: '/', redirect: (context, state) => '/asistencia'),
+      GoRoute(path: '/', redirect: (context, state) => '/dashboard'),
       ShellRoute(
         builder: (context, state, child) =>
             ResponsiveShell(location: state.uri.path, child: child),
         routes: [
+          GoRoute(path: '/dashboard', builder: (_, _) => const DashboardPage()),
           GoRoute(
             path: '/asistencia',
             builder: (_, _) => const AttendancePage(),
@@ -33,7 +35,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: FilledButton(
-          onPressed: () => context.go('/asistencia'),
+          onPressed: () => context.go('/dashboard'),
           child: const Text('Volver al inicio'),
         ),
       ),

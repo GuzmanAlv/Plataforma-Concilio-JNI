@@ -23,7 +23,8 @@ void main() {
       'Integrantes',
       'Tesorería',
       'Inventario',
-      'Asistencia & Dashboard',
+      'Asistencia',
+      'Dashboard',
     ]) {
       await tester.tap(find.widgetWithText(TextButton, label));
       await tester.pumpAndSettle();
@@ -71,7 +72,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    for (final path in ['/integrantes', '/tesoreria', '/inventario']) {
+    for (final path in [
+      '/asistencia',
+      '/integrantes',
+      '/tesoreria',
+      '/inventario',
+      '/dashboard',
+    ]) {
       container.read(appRouterProvider).go(path);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

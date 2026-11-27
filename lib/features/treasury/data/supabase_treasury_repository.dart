@@ -246,4 +246,20 @@ final class SupabaseTreasuryRepository {
         .maybeSingle();
     return row == null ? null : Expense.fromJson(row);
   }
+
+  Future<Expense> updateExpense(Expense expense) async {
+    final row = await _client
+        .from('egresos')
+        .update({
+          'nombre': expense.name.trim(),
+          'concepto': expense.concept.trim(),
+          'fecha': expense.date.toString(),
+          'monto': expense.amount.decimal,
+          'comprobante_path': expense.receiptPath,
+        })
+        .eq('id', expense.id)
+        .select()
+        .single();
+    return Expense.fromJson(row);
+  }
 }

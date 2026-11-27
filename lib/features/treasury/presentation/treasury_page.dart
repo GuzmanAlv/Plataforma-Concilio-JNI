@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../core/domain/civil_date.dart';
@@ -16,6 +15,7 @@ import '../application/treasury_providers.dart';
 import '../data/supabase_treasury_repository.dart';
 import '../domain/treasury.dart';
 import 'new_expense_dialog.dart';
+import 'movements_table.dart';
 
 class TreasuryPage extends ConsumerStatefulWidget {
   const TreasuryPage({super.key});
@@ -26,32 +26,54 @@ class TreasuryPage extends ConsumerStatefulWidget {
 class _TreasuryPageState extends ConsumerState<TreasuryPage> {
   PeriodFilter _filter = PeriodFilter.all();
 
-  Future<void> _addExpense() async {
+  Future<void> _addExpense([Expense? initialExpense]) async {
     final client = ref.read(supabaseClientProvider);
     String? uploadedPath;
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => NewExpenseDialog(
+        initialExpense: initialExpense,
         onSave: client == null
             ? null
             : (draft) async {
                 final repository = SupabaseTreasuryRepository(client);
-                if (await repository.findExpense(draft.id) != null) return;
+                if (initialExpense == null &&
+                    await repository.findExpense(draft.id) != null) {
+                  return;
+                }
                 if (draft.photo != null && uploadedPath == null) {
                   uploadedPath = await repository.uploadReceipt(
                     draft.photo!.bytes,
                     mimeType: draft.photo!.mimeType,
                   );
                 }
-                await repository.createExpense(
-                  id: draft.id,
-                  name: draft.name,
-                  date: draft.date,
-                  amount: draft.amount,
-                  concept: draft.description,
-                  receiptPath: uploadedPath,
-                );
+                final receiptPath =
+                    uploadedPath ??
+                    (draft.keepExistingReceipt
+                        ? initialExpense?.receiptPath
+                        : null);
+                if (initialExpense != null) {
+                  await repository.updateExpense(
+                    Expense(
+                      id: initialExpense.id,
+                      date: draft.date,
+                      amount: draft.amount,
+                      concept: draft.description,
+                      name: draft.name,
+                      receiptPath: receiptPath,
+                    ),
+                  );
+                } else {
+                  await repository.createExpense(
+                    id: draft.id,
+                    name: draft.name,
+                    date: draft.date,
+                    amount: draft.amount,
+                    concept: draft.description,
+                    receiptPath: receiptPath,
+                  );
+                }
               },
       ),
     );
@@ -60,7 +82,7 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
       ref.invalidate(cashEvolutionProvider);
       ref.invalidate(treasuryMovementsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Egreso registrado correctamente.')),
+        const SnackBar(content: Text('Egreso guardado correctamente.')),
       );
     }
   }
@@ -130,15 +152,10 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader(
+        const SectionHeader(
           title: 'Tesorería',
           subtitle:
               'Administramos con claridad lo que construimos juntos. Moneda: soles peruanos (PEN).',
-          trailing: FilledButton.icon(
-            onPressed: _addExpense,
-            icon: const Icon(Icons.remove_circle_outline),
-            label: const Text('Agregar egreso'),
-          ),
         ),
         AsyncPanel<CashSummary>(
           value: ref.watch(cashSummaryProvider),
@@ -314,6 +331,14 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
           ),
         ),
         const SizedBox(height: 24),
+        Center(
+          child: FilledButton.icon(
+            onPressed: () => _addExpense(),
+            icon: const Icon(Icons.remove_circle_outline),
+            label: const Text('Agregar egreso'),
+          ),
+        ),
+        const SizedBox(height: 24),
         const _OfferingCalculator(),
         const SizedBox(height: 24),
         Text(
@@ -324,78 +349,13 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
         AsyncPanel(
           value: ref.watch(treasuryMovementsProvider),
           onRetry: () => ref.invalidate(treasuryMovementsProvider),
-          builder: (movements) {
-            final rows =
-                <
-                    ({
-                      CivilDate date,
-                      String title,
-                      String detail,
-                      Money amount,
-                      String? receipt,
-                    })
-                  >[
-                    ...movements.offerings
-                        .where((o) => _filter.contains(o.date))
-                        .map(
-                          (o) => (
-                            date: o.date,
-                            title: 'Ofrenda del sábado',
-                            amount: o.net,
-                            receipt: null,
-                            detail:
-                                'Bruto ${o.gross.formatted} · Distrito ${o.district.formatted} · Colab. ${o.fixedContribution.formatted}',
-                          ),
-                        ),
-                    ...movements.expenses
-                        .where((e) => _filter.contains(e.date))
-                        .map(
-                          (e) => (
-                            date: e.date,
-                            title: e.name,
-                            amount: Money.zero - e.amount,
-                            detail: e.concept,
-                            receipt: e.receiptPath,
-                          ),
-                        ),
-                  ]
-                  ..sort((a, b) => b.date.compareTo(a.date));
-            return Card(
-              child: rows.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'Sin movimientos registrados',
-                      message:
-                          'Las ofrendas y los gastos aparecerán en este espacio.',
-                    )
-                  : Column(
-                      children: rows
-                          .map(
-                            (row) => ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 8,
-                              ),
-                              title: Text(
-                                '${row.title} · ${row.amount.formatted}',
-                              ),
-                              subtitle: Text(
-                                '${DateFormat('d MMM yyyy', 'es_PE').format(row.date.toDateTime())}\n${row.detail}',
-                              ),
-                              trailing: row.receipt == null
-                                  ? null
-                                  : IconButton(
-                                      onPressed: () =>
-                                          _showReceipt(row.receipt!),
-                                      tooltip: 'Ver comprobante',
-                                      icon: const Icon(Icons.image_outlined),
-                                    ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-            );
-          },
+          builder: (movements) => MovementsTable(
+            offerings: movements.offerings,
+            expenses: movements.expenses,
+            filter: _filter,
+            onEdit: (expense) => _addExpense(expense),
+            onReceipt: _showReceipt,
+          ),
         ),
       ],
     );
