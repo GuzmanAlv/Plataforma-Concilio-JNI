@@ -1,5 +1,13 @@
 # Conexión con Supabase
 
+## Acceso actual: roles suspendidos temporalmente
+
+Se aplicó `20261127030202_temporary_uniform_authenticated_access.sql`: una cuenta autenticada con correo y contraseña puede usar todos los módulos, sin perfil ni asignación de administrador. Flutter ya no consulta `perfiles` para permitir el acceso o mostrar el formulario de integrantes. Se conservan los datos históricos de perfiles para facilitar una futura restauración; sus escrituras desde el cliente están revocadas. Las funciones internas conservan sus nombres por compatibilidad, pero comprueban la sesión y no el rol.
+
+Siguen habilitados el inicio de sesión, RLS y el bloqueo de sesiones anónimas. Los datos de Líder/Integrante en los grupos permanecen. La guía de primera cuenta administradora más abajo corresponde al diseño anterior y ya no es necesaria: basta crear una cuenta Auth para iniciar sesión.
+
+La prueba SQL actual pasó sobre el proyecto remoto dentro de una transacción revertida: incluye creación de integrantes y movimientos por cuentas sin perfil, acceso uniforme con perfiles antiguos y bloqueo de acceso anónimo. No se conservaron usuarios ni registros de prueba.
+
 Proyecto vinculado: **GuzmanAlv's Project** (`qxiirhtpwxqkcepuhokn`).
 URL pública: `https://qxiirhtpwxqkcepuhokn.supabase.co`.
 

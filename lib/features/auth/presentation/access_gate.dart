@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_providers.dart';
-import '../../../shared/widgets/async_panel.dart';
 import '../../../shared/widgets/empty_state.dart';
 
 class AccessGate extends ConsumerWidget {
@@ -24,18 +23,14 @@ class AccessGate extends ConsumerWidget {
     ref.watch(authStateProvider);
     if (client == null) return child;
     if (client.auth.currentSession == null) return const _LoginForm();
-    return AsyncPanel(
-      value: ref.watch(profileProvider),
-      onRetry: () => ref.invalidate(profileProvider),
-      builder: (profile) => profile == null
-          ? const EmptyState(
-              icon: Icons.lock_person_outlined,
-              title: 'Tu acceso está pendiente',
-              message:
-                  'Solicita al administrador del concilio que habilite tu cuenta.',
-            )
-          : child,
-    );
+    if (client.auth.currentUser?.isAnonymous == true) {
+      return const EmptyState(
+        icon: Icons.lock_outline,
+        title: 'Inicia sesión con tu cuenta',
+        message: 'Usa tu correo y contraseña para acceder al concilio.',
+      );
+    }
+    return child;
   }
 }
 

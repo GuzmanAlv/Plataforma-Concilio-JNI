@@ -57,18 +57,11 @@ class _MembersPageState extends ConsumerState<MembersPage> {
       SectionHeader(
         title: 'Integrantes',
         subtitle: 'Cada nombre es parte de nuestra historia.',
-        trailing:
-            ref.watch(supabaseClientProvider) == null ||
-                [
-                  'admin',
-                  'secretaria',
-                ].contains(ref.watch(profileProvider).asData?.value?['rol'])
-            ? FilledButton.icon(
-                onPressed: _add,
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Nuevo integrante'),
-              )
-            : null,
+        trailing: FilledButton.icon(
+          onPressed: _add,
+          icon: const Icon(Icons.person_add_alt_1),
+          label: const Text('Nuevo integrante'),
+        ),
       ),
       Wrap(
         spacing: 12,

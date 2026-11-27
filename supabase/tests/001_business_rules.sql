@@ -133,95 +133,43 @@ begin
 end;
 $$;
 
-select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',true);
-do $$
-declare v_rechazado boolean:=false;
-begin
-  if (select count(*) from public.grupos)<>4 then raise exception 'Consulta no puede leer grupos.'; end if;
-  begin perform public.crear_integrante('No autorizado',date '2000-01-01','rojo');
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if not v_rechazado then raise exception 'Consulta pudo crear un integrante.'; end if;
-  v_rechazado:=false;
-  begin insert into public.ofrendas(fecha,monto_bruto) values(date '2026-11-21',20);
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if not v_rechazado then raise exception 'Consulta pudo insertar una ofrenda.'; end if;
-  if (select count(*) from public.perfiles)<>1 then raise exception 'Consulta puede leer perfiles ajenos.'; end if;
-  if (select count(*) from public.auditoria_caja)<>0 then raise exception 'Consulta puede leer auditoría de caja.'; end if;
-  v_rechazado:=false;
-  begin update public.perfiles set rol='admin' where user_id='00000000-0000-4000-8000-000000000002';
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if exists (select 1 from public.perfiles where rol='admin') then raise exception 'Consulta pudo elevar su rol.'; end if;
-  raise notice 'PASS: RLS de rol consulta.';
-end;
-$$;
 
-select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000004',true);
-do $$
-declare v_rechazado boolean:=false;
-begin
-  perform public.crear_integrante('Secretaria sí puede',date '2005-01-01','rojo');
-  begin insert into public.egresos(fecha,monto,concepto) values(date '2026-11-21',10,'No autorizado');
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if not v_rechazado then raise exception 'Secretaria pudo registrar gastos.'; end if;
-  if exists (select 1 from public.auditoria_caja) then raise exception 'Secretaria puede leer auditoría.'; end if;
-  raise notice 'PASS: secretaria administra jóvenes pero no egresos.';
-end;
-$$;
-
-select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000005',true);
-do $$
-declare v_rechazado boolean:=false;
-begin
-  insert into public.ofrendas(fecha,monto_bruto) values(date '2026-11-21',10.05);
-  if (select aporte_distrito from public.ofrendas where fecha=date '2026-11-21')<>1.01 then
-    raise exception 'El redondeo del distrito no es monetario.';
-  end if;
-  begin perform public.crear_integrante('No autorizado',date '2005-01-01','rojo');
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if not v_rechazado then raise exception 'Tesoreria pudo crear jóvenes.'; end if;
-  insert into storage.objects(bucket_id,name) values('comprobantes','prueba-transaccional/boleta.jpg');
-  raise notice 'PASS: tesoreria registra ofrendas/comprobantes, respeta redondeo y no crea jóvenes.';
-end;
-$$;
-
-select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000004',true);
-do $$
-declare v_rechazado boolean:=false;
-begin
-  if not exists(select 1 from storage.objects where bucket_id='comprobantes' and name='prueba-transaccional/boleta.jpg') then
-    raise exception 'Un perfil autorizado no puede leer un comprobante privado.';
-  end if;
-  begin insert into storage.objects(bucket_id,name) values('comprobantes','prueba-transaccional/no-autorizado.jpg');
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if not v_rechazado then raise exception 'Secretaria puede subir comprobantes.'; end if;
-  raise notice 'PASS: RLS de objetos privados y permisos de comprobantes.';
-end;
-$$;
-
+-- Acceso uniforme: una cuenta sin perfil puede operar en todos los módulos.
 select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000003',true);
 do $$
+declare joven uuid; rechazado boolean:=false;
 begin
-  if (select count(*) from public.integrantes)<>0 or (select count(*) from public.grupos)<>0 then
-    raise exception 'Un usuario sin perfil puede leer datos del concilio.';
-  end if;
-  if (select count(*) from public.resumen_caja)<>0 then raise exception 'La vista eludió RLS.'; end if;
-  if exists(select 1 from storage.objects where bucket_id='comprobantes') then
-    raise exception 'Un usuario sin perfil puede leer comprobantes.';
-  end if;
-  raise notice 'PASS: usuario Auth sin perfil aislado.';
+  if (select count(*) from public.grupos)<>4 then raise exception 'La cuenta sin perfil no puede leer grupos.'; end if;
+  joven := public.crear_integrante('Prueba sin perfil',date '2005-01-01','rojo');
+  if not exists(select 1 from public.integrantes where id=joven) then raise exception 'No se guardó el joven.'; end if;
+  insert into public.ofrendas(fecha,monto_bruto) values(date '2026-11-21',10.05);
+  if (select aporte_distrito from public.ofrendas where fecha=date '2026-11-21')<>1.01 then raise exception 'Redondeo incorrecto.'; end if;
+  insert into public.egresos(fecha,monto,concepto) values(date '2026-11-21',1,'Prueba transaccional');
+  update public.configuracion_caja set saldo_inicial=110 where id=1;
+  if not exists(select 1 from public.auditoria_caja where saldo_nuevo=110) then raise exception 'Auditoría inaccesible.'; end if;
+  begin update public.perfiles set rol='admin' where user_id=auth.uid();
+  exception when insufficient_privilege then rechazado:=true; end;
+  if not rechazado then raise exception 'Los perfiles históricos siguen siendo editables.'; end if;
 end;
 $$;
+-- Un antiguo perfil de consulta también tiene permisos uniformes.
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',true);
+select public.crear_integrante('Prueba perfil antiguo',date '2005-01-01','rojo');
 
+-- Las sesiones anónimas de Auth no obtienen acceso aunque tengan UID.
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000003","is_anonymous":true}',true);
+do $$ begin
+  if (select count(*) from public.grupos)<>0 then raise exception 'Se admitió una sesión anónima.'; end if;
+end; $$;
 reset role;
 set local role anon;
 do $$
-declare v_rechazado boolean:=false;
+declare rechazado boolean:=false;
 begin
-  if (select count(*) from public.configuracion_app)<>1 then raise exception 'Versión APK no disponible.'; end if;
+  if (select count(*) from public.configuracion_app)<>1 then raise exception 'Versión APK inaccesible.'; end if;
   begin perform count(*) from public.integrantes;
-  exception when insufficient_privilege then v_rechazado:=true; end;
-  if not v_rechazado then raise exception 'Anon puede consultar integrantes.'; end if;
-  raise notice 'PASS: anonimato sin datos personales, versión APK pública.';
+  exception when insufficient_privilege then rechazado:=true; end;
+  if not rechazado then raise exception 'Acceso público al directorio.'; end if;
 end;
 $$;
 reset role;

@@ -1,5 +1,7 @@
 # Supabase: esquema y reglas de negocio
 
+> Actualización de acceso: aplicar también `20261127030202_temporary_uniform_authenticated_access.sql`. Las cuentas autenticadas tienen acceso uniforme sin perfil obligatorio. Las secciones por rol que siguen documentan el diseño inicial; están suspendidas por esta migración. Se conservan inicio de sesión, RLS, bloqueo de sesiones anónimas y los roles juveniles.
+
 La migración `supabase/migrations/20261125164602_concilio_initial_schema.sql` crea la base del ciclo **1 de noviembre de 2026–31 de octubre de 2027**. No contiene jóvenes ficticios ni credenciales. Requiere un proyecto Supabase con PostgreSQL 15 o posterior por las vistas `security_invoker`.
 
 ## Instalación

@@ -1,5 +1,7 @@
 # Concilio JNI Dreamrs
 
+**Acceso actual:** los roles de acceso están desactivados temporalmente. Todas las cuentas que inician sesión con correo y contraseña tienen los mismos permisos, sin requerir una fila en `perfiles`. Los roles juveniles Líder/Integrante permanecen. Consulta [el estado de conexión](docs/CONNECTION.md).
+
 Base modular en Flutter para **Web responsiva y Android**, con Supabase y despliegue como Static Site en Render. Ciclo oficial: **noviembre de 2026 a octubre de 2027**. Moneda: **PEN (S/)**.
 
 ## Primera entrega
