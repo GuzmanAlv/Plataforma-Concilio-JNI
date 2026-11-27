@@ -13,6 +13,7 @@ class MovementsTable extends StatefulWidget {
     required this.filter,
     required this.onEdit,
     required this.onReceipt,
+    this.onEditOffering,
     super.key,
   });
   final List<Offering> offerings;
@@ -20,6 +21,7 @@ class MovementsTable extends StatefulWidget {
   final PeriodFilter filter;
   final ValueChanged<Expense> onEdit;
   final ValueChanged<String> onReceipt;
+  final ValueChanged<Offering>? onEditOffering;
   @override
   State<MovementsTable> createState() => _MovementsTableState();
 }
@@ -37,6 +39,7 @@ class _MovementsTableState extends State<MovementsTable> {
             String description,
             Money amount,
             Expense? expense,
+            Offering? offering,
           })
         >[
           ...widget.offerings
@@ -49,6 +52,7 @@ class _MovementsTableState extends State<MovementsTable> {
                       'Bruto ${o.gross.formatted} · Distrito ${o.district.formatted} · Colab. ${o.fixedContribution.formatted}',
                   amount: o.net,
                   expense: null,
+                  offering: o,
                 ),
               ),
           ...widget.expenses
@@ -60,6 +64,7 @@ class _MovementsTableState extends State<MovementsTable> {
                   description: e.concept,
                   amount: Money.zero - e.amount,
                   expense: e,
+                  offering: null,
                 ),
               ),
         ];
@@ -167,7 +172,14 @@ class _MovementsTableState extends State<MovementsTable> {
                     ),
                     DataCell(
                       expense == null
-                          ? const Text('—')
+                          ? widget.onEditOffering == null
+                                ? const Text('—')
+                                : TextButton.icon(
+                                    onPressed: () =>
+                                        widget.onEditOffering!(row.offering!),
+                                    icon: const Icon(Icons.edit_outlined),
+                                    label: const Text('Editar'),
+                                  )
                           : TextButton.icon(
                               onPressed: () => widget.onEdit(expense),
                               icon: const Icon(Icons.edit_outlined),

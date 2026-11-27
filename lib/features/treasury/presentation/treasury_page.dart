@@ -16,6 +16,7 @@ import '../data/supabase_treasury_repository.dart';
 import '../domain/treasury.dart';
 import 'new_expense_dialog.dart';
 import 'movements_table.dart';
+import 'offering_dialog.dart';
 
 class TreasuryPage extends ConsumerStatefulWidget {
   const TreasuryPage({super.key});
@@ -25,6 +26,42 @@ class TreasuryPage extends ConsumerStatefulWidget {
 
 class _TreasuryPageState extends ConsumerState<TreasuryPage> {
   PeriodFilter _filter = PeriodFilter.all();
+
+  Future<void> _registerOffering(
+    List<Offering> offerings, {
+    Money? amount,
+    Offering? existing,
+  }) async {
+    final client = ref.read(supabaseClientProvider);
+    var attempted = false;
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => OfferingDialog(
+        offerings: offerings,
+        initialDate: existing?.date,
+        initialAmount: existing?.gross ?? amount,
+        onSave: client == null
+            ? null
+            : (date, gross) async {
+                attempted = true;
+                await SupabaseTreasuryRepository(
+                  client,
+                ).saveOffering(date: date, gross: gross);
+              },
+      ),
+    );
+    if (attempted && mounted) {
+      ref.invalidate(cashSummaryProvider);
+      ref.invalidate(cashEvolutionProvider);
+      ref.invalidate(treasuryMovementsProvider);
+    }
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ofrenda guardada correctamente.')),
+      );
+    }
+  }
 
   Future<void> _addExpense([Expense? initialExpense]) async {
     final client = ref.read(supabaseClientProvider);
@@ -339,7 +376,14 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
           ),
         ),
         const SizedBox(height: 24),
-        const _OfferingCalculator(),
+        AsyncPanel(
+          value: ref.watch(treasuryMovementsProvider),
+          onRetry: () => ref.invalidate(treasuryMovementsProvider),
+          builder: (movements) => _OfferingCalculator(
+            onRegister: (amount) =>
+                _registerOffering(movements.offerings, amount: amount),
+          ),
+        ),
         const SizedBox(height: 24),
         Text(
           'Movimientos del periodo seleccionado',
@@ -355,6 +399,8 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
             filter: _filter,
             onEdit: (expense) => _addExpense(expense),
             onReceipt: _showReceipt,
+            onEditOffering: (offering) =>
+                _registerOffering(movements.offerings, existing: offering),
           ),
         ),
       ],
@@ -363,7 +409,8 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
 }
 
 class _OfferingCalculator extends StatefulWidget {
-  const _OfferingCalculator();
+  const _OfferingCalculator({required this.onRegister});
+  final ValueChanged<Money?> onRegister;
   @override
   State<_OfferingCalculator> createState() => _OfferingCalculatorState();
 }
@@ -395,12 +442,12 @@ class _OfferingCalculatorState extends State<_OfferingCalculator> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Simular una ofrenda',
+            'Ofrendas de cada sábado',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 6),
           const Text(
-            'Consulta el desglose antes de registrarla. Esta simulación no guarda movimientos.',
+            'Consulta el desglose y registra la ofrenda del sábado. Solo el neto se suma a la caja.',
             style: TextStyle(color: Color(0xFF74798C), fontSize: 12),
           ),
           const SizedBox(height: 16),
@@ -445,6 +492,12 @@ class _OfferingCalculatorState extends State<_OfferingCalculator> {
                 ),
               ),
           ],
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () => widget.onRegister(_breakdown?.gross),
+            icon: const Icon(Icons.volunteer_activism_outlined),
+            label: const Text('Registrar ofrenda'),
+          ),
         ],
       ),
     ),

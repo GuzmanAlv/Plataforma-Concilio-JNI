@@ -13,9 +13,13 @@ Base modular en Flutter para **Web responsiva y Android**, con Supabase y despli
 - Migración SQL con RLS, Storage privado, RPC transaccionales, caja auditada y configuración de versiones del APK.
 - Proyecto Android, configuración de firma, Render SPA y CI para análisis, pruebas y builds Web/APK debug.
 
-**Alcance:** las vistas iniciales consultan datos reales cuando se configura Supabase. Sin configuración funcionan como vista previa vacía. Los repositorios y RPC incluyen operaciones de escritura para completar los formularios en la siguiente etapa. Aún faltan las pantallas de alta/edición/baja, traslados, toma/corrección de asistencia, registro de movimientos/subida de fotos y los insights de constancia/ausencias. El visor de comprobantes ya consulta URLs firmadas. La comprobación de actualizaciones de APK tiene modelo y registro SQL; su interfaz se incorpora después.
+**Alcance actual:** con Supabase configurado se pueden registrar integrantes, tomar y corregir asistencias, guardar y corregir ofrendas, y registrar y editar egresos con comprobantes opcionales. El Dashboard incluye constancia y seguimiento. Sin configuración, la aplicación muestra una vista previa sin guardado. Quedan pendientes las interfaces de edición/baja y traslado de integrantes, y la comprobación de actualizaciones de APK.
 
 ## Ejecutar
+
+**Ofrendas:** `Tesorería → Registrar ofrenda` permite elegir un sábado del ciclo e ingresar el monto bruto. El formulario muestra el 10% para el distrito, S/ 10.00 de colaboración y el neto que ingresa a caja. Supabase calcula y guarda ese desglose. Cada fecha tiene un único registro: seleccionar una fecha existente o usar su botón de edición permite corregirla. Tras guardar se actualizan saldo, gráfico y movimientos.
+
+**Diseño de asistencia:** el selector de mes incluye navegación anterior/siguiente, año y cantidad de sábados. Las tarjetas de cada sábado muestran estado de registro, avance de los cuatro grupos y presentes, ausentes y convocados por grupo al desplegarlas. Un grupo pendiente no se cuenta como ausente.
 
 **Navegación y seguimiento:** Dashboard y Asistencia están separados, con Dashboard primero. El registro sabatino empieza el 28/11/2026 y se organiza por meses, con resúmenes por grupo y correcciones. El Dashboard incluye constancia y seguimiento. Tesorería muestra una tabla con edición de egresos; su botón de alta está centrado bajo el gráfico. Ver [detalle y reglas de indicadores](docs/DASHBOARD_ATTENDANCE.md).
 
