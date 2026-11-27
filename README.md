@@ -17,6 +17,10 @@ Base modular en Flutter para **Web responsiva y Android**, con Supabase y despli
 
 ## Ejecutar
 
+**Egresos:** `Tesorería → Agregar egreso` registra nombre, monto en soles, fecha del ciclo y descripción, con foto de boleta opcional (máximo 10 MiB). Los comprobantes van al Storage privado. El saldo, el gráfico y los movimientos se recargan tras guardar. Cada envío conserva su UUID para reconciliar reintentos sin duplicar gastos. La migración `20261127035725_expense_name.sql` añade el nombre del gasto y está aplicada en Supabase.
+
+El botón `Nuevo integrante` está centrado debajo del recuadro/listado del directorio.
+
 **Actualización — registro de integrantes:** disponible en `Integrantes → Nuevo integrante` para perfiles `admin` y `secretaria`. Incluye nombre, nacimiento, edad automática, grupo, rol y fecha de ingreso. Guarda mediante la RPC `crear_integrante` y actualiza el directorio. Sin Supabase se puede abrir el formulario en vista previa, con guardado deshabilitado. Las pantallas de edición/baja y traslado siguen pendientes.
 
 Requiere **Flutter 3.44.4 / Dart 3.12.2**, fijados en CI y Render. El lockfile está versionado.

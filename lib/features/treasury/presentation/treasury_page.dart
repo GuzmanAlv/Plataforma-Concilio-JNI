@@ -15,6 +15,7 @@ import '../../../shared/widgets/timeline_chart.dart';
 import '../application/treasury_providers.dart';
 import '../data/supabase_treasury_repository.dart';
 import '../domain/treasury.dart';
+import 'new_expense_dialog.dart';
 
 class TreasuryPage extends ConsumerStatefulWidget {
   const TreasuryPage({super.key});
@@ -24,6 +25,45 @@ class TreasuryPage extends ConsumerStatefulWidget {
 
 class _TreasuryPageState extends ConsumerState<TreasuryPage> {
   PeriodFilter _filter = PeriodFilter.all();
+
+  Future<void> _addExpense() async {
+    final client = ref.read(supabaseClientProvider);
+    String? uploadedPath;
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => NewExpenseDialog(
+        onSave: client == null
+            ? null
+            : (draft) async {
+                final repository = SupabaseTreasuryRepository(client);
+                if (await repository.findExpense(draft.id) != null) return;
+                if (draft.photo != null && uploadedPath == null) {
+                  uploadedPath = await repository.uploadReceipt(
+                    draft.photo!.bytes,
+                    mimeType: draft.photo!.mimeType,
+                  );
+                }
+                await repository.createExpense(
+                  id: draft.id,
+                  name: draft.name,
+                  date: draft.date,
+                  amount: draft.amount,
+                  concept: draft.description,
+                  receiptPath: uploadedPath,
+                );
+              },
+      ),
+    );
+    if (saved == true && mounted) {
+      ref.invalidate(cashSummaryProvider);
+      ref.invalidate(cashEvolutionProvider);
+      ref.invalidate(treasuryMovementsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Egreso registrado correctamente.')),
+      );
+    }
+  }
 
   Future<void> _showReceipt(String path) async {
     try {
@@ -90,10 +130,15 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeader(
+        SectionHeader(
           title: 'Tesorería',
           subtitle:
               'Administramos con claridad lo que construimos juntos. Moneda: soles peruanos (PEN).',
+          trailing: FilledButton.icon(
+            onPressed: _addExpense,
+            icon: const Icon(Icons.remove_circle_outline),
+            label: const Text('Agregar egreso'),
+          ),
         ),
         AsyncPanel<CashSummary>(
           value: ref.watch(cashSummaryProvider),
@@ -307,9 +352,9 @@ class _TreasuryPageState extends ConsumerState<TreasuryPage> {
                         .map(
                           (e) => (
                             date: e.date,
-                            title: e.concept,
+                            title: e.name,
                             amount: Money.zero - e.amount,
-                            detail: 'Egreso',
+                            detail: e.concept,
                             receipt: e.receiptPath,
                           ),
                         ),

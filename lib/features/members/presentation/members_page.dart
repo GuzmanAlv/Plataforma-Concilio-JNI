@@ -54,14 +54,9 @@ class _MembersPageState extends ConsumerState<MembersPage> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      SectionHeader(
+      const SectionHeader(
         title: 'Integrantes',
         subtitle: 'Cada nombre es parte de nuestra historia.',
-        trailing: FilledButton.icon(
-          onPressed: _add,
-          icon: const Icon(Icons.person_add_alt_1),
-          label: const Text('Nuevo integrante'),
-        ),
       ),
       Wrap(
         spacing: 12,
@@ -180,6 +175,14 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                           );
                         }).toList(),
                       ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: FilledButton.icon(
+                  onPressed: _add,
+                  icon: const Icon(Icons.person_add_alt_1),
+                  label: const Text('Nuevo integrante'),
+                ),
               ),
               const SizedBox(height: 24),
               Card(

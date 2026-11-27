@@ -18,6 +18,33 @@ void main() {
   setUpAll(() => initializeDateFormatting('es_PE'));
 
   testWidgets(
+    'New member button is centered below the directory card on mobile',
+    (tester) async {
+      tester.view.physicalSize = const Size(375, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const ConcilioApp(),
+        ),
+      );
+      container.read(appRouterProvider).go('/integrantes');
+      await tester.pumpAndSettle();
+      final button = find.widgetWithText(FilledButton, 'Nuevo integrante');
+      expect(tester.getCenter(button).dx, closeTo(187.5, 1));
+      expect(
+        tester.getTopLeft(button).dy,
+        greaterThan(tester.getBottomLeft(find.byType(Card).first).dy),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Saved sessions render four dated charts with weighted participation',
     (tester) async {
       tester.view.physicalSize = const Size(1050, 1100);

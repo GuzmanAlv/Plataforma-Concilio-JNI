@@ -71,10 +71,12 @@ final class Expense {
     required this.date,
     required this.amount,
     required this.concept,
+    this.name = 'Gasto',
     this.receiptPath,
   }) {
     requireNonEmpty(id, 'El identificador');
     requireNonEmpty(concept, 'El concepto');
+    requireNonEmpty(name, 'El nombre del gasto');
     CouncilPeriod.official.requireDate(date);
     if (amount.cents <= 0) {
       throw ArgumentError('El egreso debe ser mayor a cero.');
@@ -88,12 +90,14 @@ final class Expense {
     date: jsonDate(json, 'fecha'),
     amount: jsonMoney(json, 'monto'),
     concept: jsonString(json, 'concepto'),
+    name: json['nombre'] == null ? 'Gasto' : jsonString(json, 'nombre'),
     receiptPath: jsonNullableString(json, 'comprobante_path'),
   );
   final String id;
   final CivilDate date;
   final Money amount;
   final String concept;
+  final String name;
 
   /// Private Storage path; request a signed URL when viewing the receipt.
   final String? receiptPath;
@@ -102,6 +106,7 @@ final class Expense {
     'fecha': date.toString(),
     'monto': amount.decimal,
     'concepto': concept,
+    'nombre': name,
     'comprobante_path': receiptPath,
   };
 }

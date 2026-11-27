@@ -184,39 +184,66 @@ final class SupabaseTreasuryRepository {
   }
 
   Future<Expense> createExpense({
+    String? id,
+    String name = 'Gasto',
     required CivilDate date,
     required Money amount,
     required String concept,
     Uint8List? receiptBytes,
     String? receiptMimeType,
+    String? receiptPath,
   }) async {
     CouncilPeriod.official.requireDate(date);
     requireNonEmpty(concept, 'El concepto');
+    requireNonEmpty(name, 'El nombre del gasto');
+    if (receiptBytes != null && receiptPath != null) {
+      throw ArgumentError('Envía una imagen o una ruta existente.');
+    }
     if (amount.cents <= 0) {
       throw ArgumentError('El egreso debe ser mayor a cero.');
     }
     if (receiptBytes != null && receiptMimeType == null) {
       throw ArgumentError('Falta el tipo MIME de la imagen.');
     }
-    String? path;
+    final expenseId = id ?? const Uuid().v4();
+    final existing = await findExpense(expenseId);
+    if (existing != null) return existing;
+    String? path = receiptPath;
     if (receiptBytes != null) {
       path = await uploadReceipt(receiptBytes, mimeType: receiptMimeType!);
     }
-    final expenseId = const Uuid().v4();
     // Never delete the uploaded object on an ambiguous network failure: an
     // INSERT may still commit after another request reports the row absent.
     // Reconcile orphaned files separately, after pending writes have settled.
+    try {
+      final row = await _client
+          .from('egresos')
+          .insert({
+            'id': expenseId,
+            'fecha': date.toString(),
+            'monto': amount.decimal,
+            'concepto': concept.trim(),
+            'nombre': name.trim(),
+            'comprobante_path': path,
+          })
+          .select()
+          .single();
+      return Expense.fromJson(row);
+    } on PostgrestException catch (error) {
+      if (error.code == '23505') {
+        final saved = await findExpense(expenseId);
+        if (saved != null) return saved;
+      }
+      rethrow;
+    }
+  }
+
+  Future<Expense?> findExpense(String id) async {
     final row = await _client
         .from('egresos')
-        .insert({
-          'id': expenseId,
-          'fecha': date.toString(),
-          'monto': amount.decimal,
-          'concepto': concept.trim(),
-          'comprobante_path': path,
-        })
         .select()
-        .single();
-    return Expense.fromJson(row);
+        .eq('id', id)
+        .maybeSingle();
+    return row == null ? null : Expense.fromJson(row);
   }
 }
