@@ -15,6 +15,7 @@ import '../../attendance/application/attendance_providers.dart';
 import '../../attendance/data/supabase_attendance_repository.dart';
 import '../application/dashboard_providers.dart';
 import 'insights_panel.dart';
+import 'dashboard_information.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -217,10 +218,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Un sábado sin registro no se considera ausencia. La participación se calcula sobre las personas convocadas en las sesiones guardadas.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF74798C)),
-        ),
+        const DashboardInformation(),
       ],
     );
   }

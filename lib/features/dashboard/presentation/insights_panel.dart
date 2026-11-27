@@ -143,7 +143,12 @@ class InsightsPanel extends StatelessWidget {
       const SizedBox(height: 20),
       LayoutBuilder(
         builder: (context, c) {
-          final width = c.maxWidth >= 800 ? (c.maxWidth - 16) / 2 : c.maxWidth;
+          final columns = c.maxWidth >= 1100
+              ? 3
+              : c.maxWidth >= 700
+              ? 2
+              : 1;
+          final width = (c.maxWidth - 16 * (columns - 1)) / columns;
           return Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -173,29 +178,6 @@ class InsightsPanel extends StatelessWidget {
                   'Menor participación',
                   insights.leastRegular,
                   'La comparación empieza con tres convocatorias registradas.',
-                ),
-              ),
-              SizedBox(
-                width: width,
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Lectura responsable de los datos',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '• Seguimiento: tres ausencias consecutivas o como máximo una presencia en las últimas tres convocatorias.\n\n'
-                          '• Solo se consideran sesiones guardadas, desde el 28 de noviembre y hasta hoy. Las fechas futuras no generan alertas.\n\n'
-                          '• Una sesión sin registrar no equivale a una falta. Cada persona se evalúa según sus convocatorias y su historial de grupo.',
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ],
