@@ -45,6 +45,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _busy = false;
+  bool _showPassword = false;
   String? _error;
 
   @override
@@ -125,9 +126,21 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _password,
-                  obscureText: true,
+                  obscureText: !_showPassword,
                   autofillHints: const [AutofillHints.password],
-                  decoration: const InputDecoration(labelText: 'Contraseña'),
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    suffixIcon: IconButton(
+                      tooltip: _showPassword
+                          ? 'Ocultar contraseña'
+                          : 'Mostrar contraseña',
+                      isSelected: _showPassword,
+                      onPressed: () =>
+                          setState(() => _showPassword = !_showPassword),
+                      icon: const Icon(Icons.visibility_outlined),
+                      selectedIcon: const Icon(Icons.visibility_off_outlined),
+                    ),
+                  ),
                   validator: (value) => value == null || value.isEmpty
                       ? 'Ingresa tu contraseña.'
                       : null,
