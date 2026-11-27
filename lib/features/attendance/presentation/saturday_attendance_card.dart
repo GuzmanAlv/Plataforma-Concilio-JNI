@@ -74,34 +74,41 @@ class _SaturdayAttendanceCardState extends State<SaturdayAttendanceCard> {
         childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
         leading: Container(
           width: 52,
-          height: 64,
+          height: 56,
           decoration: BoxDecoration(
             color: const Color(0xFFF0EDFB),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${widget.date.day}',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF6354D9),
-                ),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${widget.date.day}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF6354D9),
+                    ),
+                  ),
+                  Text(
+                    DateFormat(
+                      'MMM',
+                      'es_PE',
+                    ).format(widget.date.toDateTime()).toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF79718D),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                DateFormat(
-                  'MMM',
-                  'es_PE',
-                ).format(widget.date.toDateTime()).toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF79718D),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         title: Text(

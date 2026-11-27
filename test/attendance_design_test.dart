@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:concilio_jni_dreamrs/app/theme/app_theme.dart';
 import 'package:concilio_jni_dreamrs/core/domain/civil_date.dart';
 import 'package:concilio_jni_dreamrs/features/attendance/domain/attendance_point.dart';
 import 'package:concilio_jni_dreamrs/features/attendance/presentation/attendance_month_selector.dart';
@@ -9,6 +10,27 @@ import 'package:concilio_jni_dreamrs/features/groups/domain/group.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('es_PE'));
+  testWidgets('Saturday date badge fits with enlarged text', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+            child: SingleChildScrollView(
+              child: SaturdayAttendanceCard(
+                date: CivilDate(2026, 11, 28),
+                points: const [],
+                onOpen: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
     'Month navigation controls stay within the cycle and update the selected month',
     (tester) async {
