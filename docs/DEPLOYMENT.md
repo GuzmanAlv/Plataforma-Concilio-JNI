@@ -20,10 +20,10 @@ Las variables `--dart-define` se incorporan al binario y al JavaScript publicado
 
 ## Render Static Site
 
-`render.yaml` declara un **Static Site**, el comando `bash scripts/render-build.sh`, la carpeta `build/web` y las dos variables a completar en Render. El script obtiene la versión fijada de Flutter y crea un build Web de producción con los recursos gráficos del motor servidos desde el propio sitio.
+`render.yaml` declara un **Static Site** desde `main`, el comando `bash scripts/render-build.sh` y la carpeta `build/web`. El script obtiene la versión fijada de Flutter, compila la Web de producción y descarga el APK firmado desde la versión publicada en GitHub. Antes de servirlo verifica su SHA-256. Render nunca recibe el keystore ni las contraseñas de firma.
 
 1. Conectar `GuzmanAlv/Plataforma-Concilio-JNI` en Render y crear un Blueprint desde `render.yaml`.
-2. Elegir la rama que contiene esta base y completar `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` con los valores de Supabase.
+2. Usar `main` y completar `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `APK_DOWNLOAD_URL` y `APK_SHA256`. Los dos últimos se obtienen de `build/deployment/release.json` tras publicar el APK.
 3. Revisar el plan y crear el sitio. No se requiere un servidor Dart en ejecución.
 4. En Supabase Auth, configurar la URL HTTPS del sitio y las URL de redirección que se utilicen para autenticación o recuperación de cuenta.
 5. Probar en el sitio publicado `/`, las rutas de los módulos y la recarga directa de una ruta interna.
@@ -33,6 +33,8 @@ La regla `/* → /index.html` es un **rewrite** para que el router de Flutter re
 El Blueprint establece `autoDeployTrigger: checksPass`: los cambios se despliegan cuando pasan las verificaciones de GitHub de la rama conectada. El primer despliegue se inicia al crear el sitio. Si se configura manualmente un Static Site, copiar también el rewrite y las cabeceras del YAML.
 
 Los recursos tienen `Cache-Control: no-cache` para que el navegador los revalide. Esto facilita actualizar el código cuando el SDK produce nombres de archivo sin hash. Una pestaña abierta necesita recargarse para recibir un nuevo build. No se promete uso sin conexión. El proceso estándar genera los archivos distribuibles en `build/web`, según la [guía Web de Flutter](https://docs.flutter.dev/deployment/web).
+
+La página pública `/descargar.html` permite descargar e instalar Android o abrir la Web. El APK se sirve en `/downloads/concilio-jni-dreamrs.apk` con cabeceras de descarga y tipo Android. Publicar una nueva versión requiere actualizar `APK_DOWNLOAD_URL` y `APK_SHA256` y desplegar el sitio. Una descarga fallida o con checksum incorrecto detiene el build; nunca se publica un enlace roto de forma silenciosa.
 
 ## Navegadores móviles e iPhone
 
@@ -77,9 +79,19 @@ flutter build apk --release --build-name=0.1.0 --build-number=1 --dart-define-fr
 
 Resultado: `build/app/outputs/flutter-apk/app-release.apk`. Respaldar la clave de firma en un lugar seguro. La configuración sigue la [guía Android de Flutter](https://docs.flutter.dev/deployment/android).
 
+Para la primera distribución de este proyecto se preparó la versión **1.0.0, build 2**. La configuración local usa `android/key.properties` y `android/keystores/dreamrs-release.jks`; ambos están excluidos de Git. Respaldar ambos archivos fuera del repositorio. No reemplazar ni regenerar esa clave en actualizaciones posteriores. La versión de producción no puede actualizar directamente una instalación de pruebas firmada con la clave debug: hay que reemplazar esa instalación de pruebas; los datos guardados siguen en la cuenta de Supabase.
+
 ## Distribución y control de versiones
 
 Publicar el APK firmado en una ubicación HTTPS con URL de descarga directa, por ejemplo un asset de GitHub Releases. Validar primero su descarga y actualización en un Android de prueba. Después actualizar, como administrador, la fila única de `configuracion_app` en Supabase:
+
+El script de PowerShell publica un borrador con APK y checksum, verifica sus tamaños y digest cuando lo devuelve GitHub, publica la versión y vuelve a descargarla para comprobar su SHA-256. Usa la autorización de Git ya configurada sin imprimir ni guardar el token:
+
+```powershell
+./scripts/publish-apk-release.ps1 -ApkPath build/app/outputs/flutter-apk/app-release.apk -TargetCommit (git rev-parse HEAD) -Version 1.0.0 -BuildNumber 2
+```
+
+La metadata pública queda en `build/deployment/release.json`. No se sobrescriben assets ni versiones ya publicados.
 
 ```sql
 update public.configuracion_app
