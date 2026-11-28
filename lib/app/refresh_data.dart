@@ -15,5 +15,7 @@ void refreshAppData(WidgetRef ref) {
   ref.invalidate(cashSummaryProvider);
   ref.invalidate(cashEvolutionProvider);
   ref.invalidate(treasuryMovementsProvider);
+  ref.invalidate(offeringMonthsProvider);
+  ref.invalidate(saturdayOfferingsProvider);
   ref.invalidate(inventoryItemsProvider);
 }

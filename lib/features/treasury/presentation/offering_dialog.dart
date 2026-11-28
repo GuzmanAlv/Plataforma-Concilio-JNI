@@ -13,7 +13,7 @@ class OfferingDialog extends StatefulWidget {
     this.initialAmount,
     super.key,
   });
-  final List<Offering> offerings;
+  final List<SaturdayOffering> offerings;
   final Future<void> Function(CivilDate, Money)? onSave;
   final CivilDate? initialDate;
   final Money? initialAmount;
@@ -28,15 +28,8 @@ class _OfferingDialogState extends State<OfferingDialog> {
   bool _busy = false;
   bool _locked = false;
   String? _error;
-  Offering? get _existing =>
+  SaturdayOffering? get _existing =>
       widget.offerings.where((o) => o.date == _date).firstOrNull;
-  OfferingBreakdown? get _breakdown {
-    if (_validateAmount(_amount.text) != null) return null;
-    return OfferingBreakdown(
-      Money.parse(_amount.text.trim().replaceAll(',', '.')),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +67,10 @@ class _OfferingDialogState extends State<OfferingDialog> {
       _error = null;
     });
     try {
-      await widget.onSave!(_date, _breakdown!.gross);
+      await widget.onSave!(
+        _date,
+        Money.parse(_amount.text.trim().replaceAll(',', '.')),
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (mounted) {
@@ -96,12 +92,15 @@ class _OfferingDialogState extends State<OfferingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final breakdown = _breakdown;
     return PopScope(
       canPop: !_busy,
       child: AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
-          _existing == null ? 'Registrar ofrenda' : 'Corregir ofrenda',
+          _existing == null
+              ? 'Registrar ofrenda sabatina'
+              : 'Corregir ofrenda sabatina',
         ),
         content: SizedBox(
           width: 460,
@@ -186,45 +185,15 @@ class _OfferingDialogState extends State<OfferingDialog> {
                   ),
                   const SizedBox(height: 18),
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F6FC),
+                      color: const Color(0xFFF2EFFC),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Desglose de la ofrenda',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Distrito (10%): ${breakdown?.district.formatted ?? '—'}',
-                        ),
-                        const SizedBox(height: 8),
-                        const Text('Colaboración fija: S/ 10.00'),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Divider(),
-                        ),
-                        Text(
-                          'Neto de caja: ${breakdown?.net.formatted ?? '—'}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF6354D9),
-                          ),
-                        ),
-                      ],
+                    child: const Text(
+                      'Este monto se acumula en el mes. Aquí no se descuenta distrito ni colaboración, y todavía no ingresa a caja. Revisa y confirma el cierre mensual para aplicar las deducciones una sola vez.',
                     ),
                   ),
-                  if (breakdown?.net.isNegative == true)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 12),
-                      child: Text(
-                        'El neto es negativo porque el monto recogido no cubre el aporte al distrito y la colaboración fija.',
-                      ),
-                    ),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),

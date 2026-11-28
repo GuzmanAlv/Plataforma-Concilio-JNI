@@ -12,6 +12,7 @@
 - El cálculo de constancia agrupa registros por integrante en una pasada, en vez de recorrer todas las asistencias por cada persona. Las clasificaciones calculadas se reutilizan en su objeto de indicadores.
 - El directorio dibuja hasta 30 integrantes por página y la tabla financiera hasta 20 movimientos. Los filtros y totales siguen considerando todos los registros cargados. Esto limita los widgets creados; las consultas siguen paginándose con orden estable y sin truncar datos.
 - El formulario de asistencia muestra directamente su lista, sin buscador interno.
+- Los registros sabatinos y los acumulados de ofrendas comparten la misma caché temporal. La tabla mensual tiene hasta cinco sábados. El cambio a esa vista deja de observar el saldo y el gráfico; las consultas del registro sabatino se reutilizan al abrir su formulario. Guardar un sábado no vuelve a consultar la caja porque solo afecta el acumulado pendiente. Confirmar el mes sí actualiza las consultas financieras.
 
 ## Verificación reproducible
 

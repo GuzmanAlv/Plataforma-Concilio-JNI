@@ -49,7 +49,8 @@ class _MovementsTableState extends State<MovementsTable> {
               .map(
                 (o) => (
                   date: o.date,
-                  title: 'Ofrenda del sábado',
+                  title:
+                      'Ofrenda mensual · ${DateFormat('MMM yyyy', 'es_PE').format(o.month.toDateTime())}',
                   description:
                       'Bruto ${o.gross.formatted} · Distrito ${o.district.formatted} · Colab. ${o.fixedContribution.formatted}',
                   amount: o.net,

@@ -104,9 +104,9 @@ final class SupabaseTreasuryRepository {
   Future<List<Offering>> loadOfferings() async {
     final rows = await loadAllRows(
       (from, to) async => await _client
-          .from('ofrendas')
+          .from('ofrendas_mensuales')
           .select()
-          .order('fecha', ascending: false)
+          .order('mes', ascending: false)
           .order('id')
           .range(from, to),
     );
@@ -134,21 +134,60 @@ final class SupabaseTreasuryRepository {
         .single();
   }
 
-  Future<Offering> saveOffering({
+  Future<List<OfferingMonth>> loadOfferingMonths() async {
+    final rows = await _client
+        .from('resumen_ofrendas_mensuales')
+        .select()
+        .order('mes');
+    return rows.map(OfferingMonth.fromJson).toList(growable: false);
+  }
+
+  Future<List<SaturdayOffering>> loadSaturdayOfferings() async {
+    final rows = await loadAllRows(
+      (from, to) async => await _client
+          .from('ofrendas_sabatinas')
+          .select('id,fecha,monto_bruto')
+          .order('fecha')
+          .range(from, to),
+    );
+    return rows.map(SaturdayOffering.fromJson).toList(growable: false);
+  }
+
+  Future<void> confirmMonth({
+    required OfferingMonth month,
+    required Money gross,
+    required String reason,
+  }) async {
+    OfferingBreakdown(gross);
+    await _client.rpc(
+      'confirmar_ofrenda_mensual',
+      params: {
+        'p_mes': month.month.toString(),
+        'p_monto_bruto': gross.decimal,
+        'p_fuente_revision': month.sourceRevision,
+        'p_version': month.version,
+        'p_ajuste_razon': reason.trim(),
+      },
+    );
+  }
+
+  Future<SaturdayOffering> saveSaturdayOffering({
     required CivilDate date,
     required Money gross,
   }) async {
     CouncilPeriod.official.requireDate(date, saturday: true);
-    OfferingBreakdown(gross);
+    if (gross.cents <= 0) {
+      throw ArgumentError('El monto debe ser mayor a cero.');
+    }
     final row = await _client
-        .from('ofrendas')
+        .from('ofrendas_sabatinas')
         .upsert({
           'fecha': date.toString(),
           'monto_bruto': gross.decimal,
         }, onConflict: 'fecha')
         .select()
         .single();
-    return Offering.fromJson(row);
+    return SaturdayOffering.fromJson(row);
   }
 
   /// Works with XFile.readAsBytes() on Web and Android; never requires dart:io.

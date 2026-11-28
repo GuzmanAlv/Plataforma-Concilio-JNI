@@ -22,15 +22,12 @@ void main() {
           expect(body.keys, unorderedEquals(['fecha', 'monto_bruto']));
           expect(body['fecha'], '2026-11-28');
           writes++;
-          final second = body['monto_bruto'] == '200.00';
+          expect(request.url.path, endsWith('/ofrendas_sabatinas'));
           return http.Response(
             jsonEncode({
               'id': 'same-offering',
               'fecha': '2026-11-28',
               'monto_bruto': body['monto_bruto'],
-              'aporte_distrito': second ? '20.00' : '10.00',
-              'colaboracion_fija': '10.00',
-              'monto_neto': second ? '170.00' : '80.00',
             }),
             200,
             request: request,
@@ -40,17 +37,17 @@ void main() {
       );
       addTearDown(client.dispose);
       final repository = SupabaseTreasuryRepository(client);
-      final first = await repository.saveOffering(
+      final first = await repository.saveSaturdayOffering(
         date: CivilDate(2026, 11, 28),
         gross: Money.parse('100'),
       );
-      final corrected = await repository.saveOffering(
+      final corrected = await repository.saveSaturdayOffering(
         date: CivilDate(2026, 11, 28),
         gross: Money.parse('200'),
       );
       expect(first.id, corrected.id);
       expect(writes, 2);
-      expect(corrected.net.cents, 17000);
+      expect(corrected.gross.cents, 20000);
     },
   );
 }

@@ -17,7 +17,7 @@ Base modular en Flutter para **Web responsiva y Android**, con Supabase y despli
 
 ## Ejecutar
 
-**Ofrendas:** `Tesorería → Registrar ofrenda` permite elegir un sábado del ciclo e ingresar el monto bruto. El formulario muestra el 10% para el distrito, S/ 10.00 de colaboración y el neto que ingresa a caja. Supabase calcula y guarda ese desglose. Cada fecha tiene un único registro: seleccionar una fecha existente o usar su botón de edición permite corregirla. Tras guardar se actualizan saldo, gráfico y movimientos.
+**Ofrendas:** `Agregar ofrenda del sábado` guarda únicamente lo recogido, sin deducciones ni ingreso inmediato a caja. `Agregar ofrenda mensual` precarga la suma de los sábados y permite confirmar o ajustar el total (con motivo si difiere del acumulado). El 10% del distrito y S/ 10.00 de colaboración se aplican **una sola vez por mes**. Solo el neto confirmado afecta caja y gráfico. `Dashboard de caja / Ofrendas por sábado` alterna la sección principal con una tabla mensual de sábados. Ver [reglas del cierre mensual](docs/MONTHLY_OFFERINGS.md).
 
 **Diseño de asistencia:** el selector de mes incluye navegación anterior/siguiente, año y cantidad de sábados. Las tarjetas de cada sábado muestran estado de registro, avance de los cuatro grupos y presentes, ausentes y convocados por grupo al desplegarlas. Un grupo pendiente no se cuenta como ausente.
 

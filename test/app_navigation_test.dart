@@ -37,7 +37,7 @@ void main() {
   });
 
   testWidgets(
-    'Mobile drawer navigates and offering calculator uses net income',
+    'Mobile drawer navigates and monthly form calculates net income',
     (tester) async {
       tester.view.physicalSize = const Size(375, 1000);
       tester.view.devicePixelRatio = 1;
@@ -49,7 +49,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ListTile, 'Tesorería'));
       await tester.pumpAndSettle();
-      final input = find.byType(TextField);
+      await tester.ensureVisible(find.text('Agregar ofrenda mensual'));
+      await tester.tap(find.text('Agregar ofrenda mensual'));
+      await tester.pumpAndSettle();
+      final input = find.byType(TextFormField).first;
       await tester.ensureVisible(input);
       await tester.enterText(input, '100.00');
       await tester.pumpAndSettle();

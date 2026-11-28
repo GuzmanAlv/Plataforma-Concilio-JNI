@@ -5,6 +5,29 @@ import '../../../core/supabase/supabase_providers.dart';
 import '../data/supabase_treasury_repository.dart';
 import '../domain/treasury.dart';
 
+final offeringMonthsProvider = FutureProvider.autoDispose<List<OfferingMonth>>((
+  ref,
+) async {
+  ref.watch(authIdentityProvider);
+  final client = ref.watch(supabaseClientProvider);
+  if (client == null) return OfferingMonth.emptyCycle();
+  final data = await SupabaseTreasuryRepository(client).loadOfferingMonths();
+  ref.cacheSuccess();
+  return data;
+});
+
+final saturdayOfferingsProvider =
+    FutureProvider.autoDispose<List<SaturdayOffering>>((ref) async {
+      ref.watch(authIdentityProvider);
+      final client = ref.watch(supabaseClientProvider);
+      if (client == null) return [];
+      final data = await SupabaseTreasuryRepository(
+        client,
+      ).loadSaturdayOfferings();
+      ref.cacheSuccess();
+      return data;
+    });
+
 final cashSummaryProvider = FutureProvider.autoDispose<CashSummary>((
   ref,
 ) async {
