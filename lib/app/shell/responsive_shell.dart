@@ -6,6 +6,7 @@ import '../../core/supabase/supabase_providers.dart';
 import '../../features/auth/presentation/access_gate.dart';
 import '../theme/app_theme.dart';
 import '../refresh_data.dart';
+import '../../shared/widgets/dreamrs_mark.dart';
 
 const appDestinations = <({String path, String label, IconData icon})>[
   (path: '/dashboard', label: 'Dashboard', icon: Icons.insights_outlined),
@@ -185,15 +186,7 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: AppTheme.purple,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
-      ),
+      const DreamrsMark(),
       if (!compact) const SizedBox(width: 10),
       if (!compact)
         const Column(
