@@ -12,6 +12,10 @@ import '../application/members_providers.dart';
 import '../data/supabase_members_repository.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import 'new_member_dialog.dart';
+import '../../../shared/widgets/styled_select.dart';
+import '../../attendance/application/attendance_sheet_provider.dart';
+import '../../attendance/application/attendance_providers.dart';
+import '../../dashboard/application/dashboard_providers.dart';
 
 class MembersPage extends ConsumerStatefulWidget {
   const MembersPage({super.key});
@@ -23,15 +27,27 @@ class _MembersPageState extends ConsumerState<MembersPage> {
   String _search = '';
   GroupId? _group;
 
-  Future<void> _add() async {
+  Future<void> _add([MemberDirectoryEntry? entry]) async {
     final client = ref.read(supabaseClientProvider);
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => NewMemberDialog(
+        initialEntry: entry,
         onSave: client == null
             ? null
             : (name, birth, group, role, start) async {
+                if (entry != null) {
+                  await SupabaseMembersRepository(client).edit(
+                    memberId: entry.member.id,
+                    fullName: name,
+                    birthDate: birth,
+                    groupId: group,
+                    role: role,
+                    effectiveDate: start,
+                  );
+                  return;
+                }
                 await SupabaseMembersRepository(client).create(
                   fullName: name,
                   birthDate: birth,
@@ -44,8 +60,17 @@ class _MembersPageState extends ConsumerState<MembersPage> {
     );
     if (saved == true && mounted) {
       ref.invalidate(memberDirectoryProvider);
+      ref.invalidate(attendanceSheetProvider);
+      ref.invalidate(attendanceSummaryProvider);
+      ref.invalidate(dashboardInsightsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Integrante registrado correctamente.')),
+        SnackBar(
+          content: Text(
+            entry == null
+                ? 'Integrante registrado correctamente.'
+                : 'Datos actualizados correctamente.',
+          ),
+        ),
       );
     }
   }
@@ -75,10 +100,10 @@ class _MembersPageState extends ConsumerState<MembersPage> {
           ),
           SizedBox(
             width: 220,
-            child: DropdownButtonFormField<GroupId?>(
-              isExpanded: true,
-              initialValue: null,
-              decoration: const InputDecoration(labelText: 'Grupo'),
+            child: StyledSelect<GroupId?>(
+              value: _group,
+              label: 'Filtrar por grupo',
+              icon: Icons.groups_outlined,
               items: [
                 const DropdownMenuItem<GroupId?>(
                   value: null,
@@ -87,7 +112,17 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                 ...GroupId.values.map(
                   (group) => DropdownMenuItem(
                     value: group,
-                    child: Text(group.groupName),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 10,
+                          color: AppTheme.groupColors[group.name],
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(group.groupName)),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -160,18 +195,40 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                               ),
                             ),
                             title: Text(entry.member.fullName),
-                            subtitle: Text(
-                              '${entry.member.ageOn(today)} años · ${entry.membership?.role.label ?? 'Sin asignación'}',
-                            ),
-                            trailing: group == null
-                                ? null
-                                : Text(
-                                    group.label,
-                                    style: TextStyle(
-                                      color: AppTheme.groupColors[group.name],
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            onTap: () => _add(entry),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${entry.member.ageOn(today)} años · ${entry.membership?.role.label ?? 'Sin asignación'}',
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Cumpleaños: ${DateFormat('dd/MM/yyyy').format(entry.member.birthDate.toDateTime())}',
+                                  ),
+                                  if (group != null)
+                                    Text(
+                                      group.groupName,
+                                      style: TextStyle(
+                                        color: group == GroupId.amarillo
+                                            ? const Color(0xFF846100)
+                                            : AppTheme.groupColors[group.name],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            trailing: IconButton(
+                              tooltip: 'Editar integrante',
+                              onPressed: () => _add(entry),
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: AppTheme.purple,
+                              ),
+                            ),
                           );
                         }).toList(),
                       ),

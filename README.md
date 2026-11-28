@@ -13,7 +13,7 @@ Base modular en Flutter para **Web responsiva y Android**, con Supabase y despli
 - Migración SQL con RLS, Storage privado, RPC transaccionales, caja auditada y configuración de versiones del APK.
 - Proyecto Android, configuración de firma, Render SPA y CI para análisis, pruebas y builds Web/APK debug.
 
-**Alcance actual:** con Supabase configurado se pueden registrar integrantes, tomar y corregir asistencias, guardar y corregir ofrendas, y registrar y editar egresos con comprobantes opcionales. El Dashboard incluye constancia y seguimiento. Sin configuración, la aplicación muestra una vista previa sin guardado. Quedan pendientes las interfaces de edición/baja y traslado de integrantes, y la comprobación de actualizaciones de APK.
+**Alcance actual:** con Supabase configurado se pueden registrar y editar integrantes (incluido traslado de grupo con historial), tomar y corregir asistencias, guardar y corregir ofrendas, y registrar y editar egresos con comprobantes opcionales. El Dashboard incluye constancia y seguimiento. Sin configuración, la aplicación muestra una vista previa sin guardado. Quedan pendientes las interfaces de baja de integrantes y comprobación de actualizaciones de APK.
 
 ## Ejecutar
 
@@ -26,6 +26,12 @@ Base modular en Flutter para **Web responsiva y Android**, con Supabase y despli
 **Egresos:** `Tesorería → Agregar egreso` registra nombre, monto en soles, fecha del ciclo y descripción, con foto de boleta opcional (máximo 10 MiB). Los comprobantes van al Storage privado. El saldo, el gráfico y los movimientos se recargan tras guardar. Cada envío conserva su UUID para reconciliar reintentos sin duplicar gastos. La migración `20261127035725_expense_name.sql` añade el nombre del gasto y está aplicada en Supabase.
 
 El botón `Nuevo integrante` está centrado debajo del recuadro/listado del directorio.
+
+**Edición de integrantes:** el directorio muestra nombre, edad, fecha de cumpleaños, rol y grupo. Tocar la fila o su lápiz abre los datos precargados. Nombre, nacimiento y asignación se guardan en una transacción con `editar_integrante` (migración `20261128001908_edit_member_details.sql`, aplicada en Supabase). Cambiar grupo o rol requiere una fecha efectiva posterior al inicio de la asignación vigente, dentro del ciclo y sin fechas futuras. Si se mantiene la asignación, no se generan entradas adicionales de historial. Las asistencias guardadas conservan sus datos históricos.
+
+**Fechas y filtros:** los formularios comparten campos de fecha con escritura `dd/mm/aaaa` y calendario; el nacimiento abre directamente la selección de año. Los filtros de grupo y periodo usan menús con estilo uniforme. `Elegir rango` permite seleccionar o escribir Desde/Hasta, con accesos al ciclo completo o al mes de la fecha inicial; valida límites y orden antes de aplicar. Los diálogos se ajustan al ancho disponible y permiten desplazamiento en móviles.
+
+**Toma de asistencia:** incluye búsqueda por nombre, presentes/ausentes y barra de participación. La búsqueda conserva las marcas de personas ocultas; `Marcar todos` y `Desmarcar todos` se aplican a todo el grupo.
 
 **Actualización — registro de integrantes:** disponible en `Integrantes → Nuevo integrante` para perfiles `admin` y `secretaria`. Incluye nombre, nacimiento, edad automática, grupo, rol y fecha de ingreso. Guarda mediante la RPC `crear_integrante` y actualiza el directorio. Sin Supabase se puede abrir el formulario en vista previa, con guardado deshabilitado. Las pantallas de edición/baja y traslado siguen pendientes.
 

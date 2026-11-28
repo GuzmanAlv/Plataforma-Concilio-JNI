@@ -85,6 +85,7 @@ void main() {
           .onPressed,
       isNotNull,
     );
+    await tester.ensureVisible(find.widgetWithText(CheckboxListTile, 'Luis'));
     await tester.tap(find.widgetWithText(CheckboxListTile, 'Luis'));
     await tester.pump();
     await tester.tap(find.text('Guardar asistencia'));

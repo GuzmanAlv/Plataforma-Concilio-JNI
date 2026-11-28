@@ -10,6 +10,7 @@ import '../application/attendance_providers.dart';
 import '../application/attendance_sheet_provider.dart';
 import '../data/supabase_attendance_repository.dart';
 import '../domain/attendance.dart';
+import '../../../app/theme/app_theme.dart';
 
 class AttendanceEditor extends ConsumerStatefulWidget {
   const AttendanceEditor({
@@ -29,6 +30,7 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
   Set<String>? _present;
   bool _busy = false;
   String? _error;
+  String _search = '';
   Future<void> _save() async {
     final client = ref.read(supabaseClientProvider);
     if (_busy ||
@@ -80,11 +82,42 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
     return PopScope(
       canPop: !_busy,
       child: AlertDialog(
-        title: Text(
-          '${widget.group.groupName}\n${DateFormat('d MMMM yyyy', 'es_PE').format(widget.date.toDateTime())}',
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: AppTheme.groupColors[widget.group.name]!
+                  .withValues(alpha: .14),
+              child: Icon(
+                Icons.fact_check_outlined,
+                color: AppTheme.groupColors[widget.group.name],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(widget.group.groupName),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat(
+                      'EEEE d MMMM yyyy',
+                      'es_PE',
+                    ).format(widget.date.toDateTime()),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF79718D),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         content: SizedBox(
-          width: 500,
+          width: 560,
           child: SingleChildScrollView(
             child: AsyncPanel(
               value: sheetValue,
@@ -101,9 +134,46 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
                           : 'Marca a los presentes. Las personas sin marca quedarán ausentes.',
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      '${_present!.length} presentes de ${sheet.roster.length} convocados',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF2EFFC),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '${_present!.length} presentes de ${sheet.roster.length} convocados',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.purple,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${sheet.roster.length - _present!.length} ausentes',
+                          ),
+                          const SizedBox(height: 12),
+                          LinearProgressIndicator(
+                            value: sheet.roster.isEmpty
+                                ? 0
+                                : _present!.length / sheet.roster.length,
+                            minHeight: 6,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      enabled: !_busy,
+                      decoration: const InputDecoration(
+                        labelText: 'Buscar integrante',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _search = value.trim().toLowerCase()),
                     ),
                     Wrap(
                       spacing: 8,
@@ -133,23 +203,55 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
                           'No hay integrantes asignados a este grupo en esta fecha. Al guardar se registrará una sesión sin convocados.',
                         ),
                       ),
-                    ...sheet.roster.map(
-                      (e) => CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(e.member.fullName),
-                        subtitle: Text(e.membership!.role.label),
-                        value: _present!.contains(e.member.id),
-                        onChanged: _busy
-                            ? null
-                            : (value) => setState(() {
-                                if (value == true) {
-                                  _present!.add(e.member.id);
-                                } else {
-                                  _present!.remove(e.member.id);
-                                }
-                              }),
+                    if (sheet.roster.isNotEmpty &&
+                        !sheet.roster.any(
+                          (e) =>
+                              e.member.fullName.toLowerCase().contains(_search),
+                        ))
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('No hay coincidencias con ese nombre.'),
                       ),
-                    ),
+                    ...sheet.roster
+                        .where(
+                          (e) =>
+                              e.member.fullName.toLowerCase().contains(_search),
+                        )
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: CheckboxListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                side: BorderSide(
+                                  color: _present!.contains(e.member.id)
+                                      ? const Color(0xFFD4CBF4)
+                                      : const Color(0xFFE8EAF2),
+                                ),
+                              ),
+                              tileColor: _present!.contains(e.member.id)
+                                  ? const Color(0xFFF7F5FD)
+                                  : Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: Text(e.member.fullName),
+                              subtitle: Text(e.membership!.role.label),
+                              value: _present!.contains(e.member.id),
+                              onChanged: _busy
+                                  ? null
+                                  : (value) => setState(() {
+                                      if (value == true) {
+                                        _present!.add(e.member.id);
+                                      } else {
+                                        _present!.remove(e.member.id);
+                                      }
+                                    }),
+                            ),
+                          ),
+                        ),
                     if (ref.watch(supabaseClientProvider) == null &&
                         widget.onSave == null)
                       const Text(
