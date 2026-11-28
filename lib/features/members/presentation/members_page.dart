@@ -12,6 +12,7 @@ import '../application/members_providers.dart';
 import '../data/supabase_members_repository.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import 'new_member_dialog.dart';
+import 'member_directory_row.dart';
 import '../../../shared/widgets/styled_select.dart';
 import '../../attendance/application/attendance_sheet_provider.dart';
 import '../../attendance/application/attendance_providers.dart';
@@ -178,6 +179,7 @@ class _MembersPageState extends ConsumerState<MembersPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
+                clipBehavior: Clip.antiAlias,
                 child: filtered.isEmpty
                     ? EmptyState(
                         icon: Icons.people_outline,
@@ -189,63 +191,17 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                             : 'Prueba con otro nombre o grupo.',
                       )
                     : Column(
-                        children: filtered.skip(page * _pageSize).take(_pageSize).map((
-                          entry,
-                        ) {
-                          final group = entry.membership?.groupId;
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: group == null
-                                  ? const Color(0xFFF0EEFC)
-                                  : AppTheme.groupColors[group.name]!
-                                        .withValues(alpha: 0.12),
-                              child: Text(
-                                entry.member.fullName
-                                    .substring(0, 1)
-                                    .toUpperCase(),
-                              ),
-                            ),
-                            title: Text(entry.member.fullName),
-                            onTap: () => _add(entry),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${entry.member.ageOn(today)} años · ${entry.membership?.role.label ?? 'Sin asignación'}',
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Cumpleaños: ${DateFormat('dd/MM/yyyy').format(entry.member.birthDate.toDateTime())}',
-                                  ),
-                                  if (group != null)
-                                    Text(
-                                      group.groupName,
-                                      style: TextStyle(
-                                        color: group == GroupId.amarillo
-                                            ? const Color(0xFF846100)
-                                            : AppTheme.groupColors[group.name],
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            trailing: IconButton(
-                              tooltip: 'Editar integrante',
-                              onPressed: () => _add(entry),
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                color: AppTheme.purple,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children: filtered
+                            .skip(page * _pageSize)
+                            .take(_pageSize)
+                            .map((entry) {
+                              return MemberDirectoryRow(
+                                entry: entry,
+                                today: today,
+                                onEdit: () => _add(entry),
+                              );
+                            })
+                            .toList(),
                       ),
               ),
               if (pageCount > 1)

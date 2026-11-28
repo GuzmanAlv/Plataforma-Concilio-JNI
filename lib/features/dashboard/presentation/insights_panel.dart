@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../domain/attendance_insights.dart';
+import 'constancy_ranking.dart';
 
 class InsightsPanel extends StatelessWidget {
   const InsightsPanel({required this.insights, super.key});
@@ -155,12 +156,7 @@ class InsightsPanel extends StatelessWidget {
             children: [
               SizedBox(
                 width: width,
-                child: _ranking(
-                  context,
-                  'Mayor constancia',
-                  insights.mostRegular,
-                  'Las presencias aparecerán al guardar asistencias.',
-                ),
+                child: ConstancyRanking(people: insights.mostRegular),
               ),
               SizedBox(
                 width: width,

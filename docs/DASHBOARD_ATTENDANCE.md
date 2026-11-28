@@ -18,7 +18,7 @@ Los filtros de mes, rango o ciclo afectan los indicadores y gráficos. El análi
 
 - Integrantes activos, personas con convocatorias y personas sin registros en el rango.
 - Participación ponderada: presencias / convocatorias guardadas, sin promediar porcentajes de grupos de distinto tamaño.
-- Mayor constancia: más presencias y, en caso de empate, mayor tasa de participación.
+- Mayor constancia: primero integrantes y después líderes, según su asignación actual. Dentro de cada categoría se ordena por porcentaje descendente; en empate, por presencias y luego por nombre. El ranking compacto muestra hasta cinco posiciones numeradas, nombre, grupo actual y porcentaje del periodo, sin ausencias ni fechas adicionales. Reutiliza el directorio ya cargado, sin consultas nuevas.
 - Menor participación: tasa ascendente, con al menos tres convocatorias para comparar.
 - Seguimiento: tres ausencias consecutivas o como máximo una presencia en las últimas tres convocatorias registradas. No se etiqueta a personas con menos de tres convocatorias.
 - Grupo más activo por tasa de participación, mostrando su número de sesiones.
@@ -31,9 +31,15 @@ Una fecha sin sesión no equivale a una falta. Las personas dadas de baja se exc
 
 El botón «Agregar egreso» está centrado debajo del gráfico de caja. Los movimientos se presentan en una tabla desplazable con Fecha, Tipo, Nombre, Descripción, Monto, Boleta y Acciones. Se puede ordenar por fecha, nombre o monto; el filtro de periodo se mantiene.
 
+La tabla ocupa como mínimo el ancho de su tarjeta, con bordes redondeados recortados y separaciones de columnas compactas. Cuando el ancho disponible no alcanza, permite desplazamiento horizontal con barra visible. Los títulos y descripciones largos conservan el texto completo en una ayuda emergente. Se mantienen veinte movimientos por página.
+
 «Editar» abre el formulario del egreso con sus datos actuales. Se pueden cambiar nombre, descripción, fecha y monto, conservar la boleta, reemplazarla o quitar su asociación. La actualización conserva el UUID y modifica el movimiento existente; no agrega otro egreso. Saldo, evolución y movimientos se recargan después de guardar. Los archivos reemplazados se conservan para evitar pérdidas por respuestas de red inciertas; pueden reconciliarse posteriormente como objetos sin referencias.
 
-Las filas de ofrendas muestran el desglose y su ingreso neto. La acción de edición de esta entrega corresponde a egresos.
+Las filas de ofrendas muestran el desglose mensual y su ingreso neto confirmado. Su acción de edición permite revisar y confirmar el mes. Ver `MONTHLY_OFFERINGS.md`.
+
+## Directorio compacto
+
+Las filas distribuyen nombre a la izquierda, fecha de nacimiento y edad al centro, y grupo con cargo a la derecha, junto al botón de edición. En móvil se usan el nombre corto del grupo y tamaños compactos para conservar esa distribución. Los nombres largos tienen un máximo de dos líneas con ayuda emergente; se mantienen la edición al tocar y la paginación de treinta integrantes.
 
 ## Validación
 

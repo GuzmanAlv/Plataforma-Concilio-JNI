@@ -34,6 +34,10 @@ final dashboardInsightsProvider = FutureProvider.autoDispose
       final results = await (membersFuture, pointsFuture, rowsFuture).wait;
       final insights = AttendanceInsights(
         members: results.$1.map((e) => e.member),
+        memberships: {
+          for (final entry in results.$1)
+            if (entry.membership != null) entry.member.id: entry.membership!,
+        },
         points: results.$2,
         snapshots: results.$3.map(
           (r) => AttendanceSnapshot(

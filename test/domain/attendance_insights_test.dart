@@ -20,6 +20,41 @@ AttendanceSnapshot mark(String id, int offset, bool present) =>
     );
 void main() {
   test(
+    'Constancy ranks members before leaders, then percentage and attendance',
+    () {
+      final stats = AttendanceInsights(
+        members: [member('Líder'), member('Ana'), member('Luis')],
+        memberships: {
+          for (final name in ['Líder', 'Ana', 'Luis'])
+            name: GroupMembership(
+              id: name,
+              memberId: name,
+              groupId: GroupId.verde,
+              role: name == 'Líder' ? MemberRole.lider : MemberRole.integrante,
+              startDate: AttendanceCalendar.start,
+            ),
+        },
+        snapshots: [
+          ...List.generate(3, (i) => mark('Líder', i, true)),
+          mark('Ana', 0, true),
+          mark('Ana', 1, false),
+          mark('Ana', 2, true),
+          mark('Luis', 0, true),
+        ],
+        points: [],
+        start: AttendanceCalendar.start,
+        end: CivilDate(2027, 10, 31),
+        today: CivilDate(2026, 12, 12),
+      );
+      expect(stats.mostRegular.map((p) => p.member.id), [
+        'Luis',
+        'Ana',
+        'Líder',
+      ]);
+      expect(stats.mostRegular.first.membership!.groupId, GroupId.verde);
+    },
+  );
+  test(
     'Operational calendar starts Nov 28 and separates months through Oct 2027',
     () {
       expect(AttendanceCalendar.saturdays.length, 49);

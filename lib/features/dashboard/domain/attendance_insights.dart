@@ -16,9 +16,13 @@ class AttendanceSnapshot {
 }
 
 class MemberParticipation {
-  MemberParticipation(this.member, Iterable<AttendanceSnapshot> records)
-    : records = records.toList()..sort((a, b) => b.date.compareTo(a.date));
+  MemberParticipation(
+    this.member,
+    Iterable<AttendanceSnapshot> records, {
+    this.membership,
+  }) : records = records.toList()..sort((a, b) => b.date.compareTo(a.date));
   final Member member;
+  final GroupMembership? membership;
   final List<AttendanceSnapshot> records;
   late final int attended = records.where((r) => r.present).length;
   int get invited => records.length;
@@ -40,6 +44,7 @@ class AttendanceInsights {
     required CivilDate start,
     required CivilDate end,
     required CivilDate today,
+    Map<String, GroupMembership> memberships = const {},
   }) {
     final valid = snapshots
         .where(
@@ -56,7 +61,13 @@ class AttendanceInsights {
     }
     people = members
         .where((m) => m.active)
-        .map((m) => MemberParticipation(m, byMember[m.id] ?? const []))
+        .map(
+          (m) => MemberParticipation(
+            m,
+            byMember[m.id] ?? const [],
+            membership: memberships[m.id],
+          ),
+        )
         .toList();
     sessions = points
         .where(
@@ -123,8 +134,18 @@ class AttendanceInsights {
 
   late final List<MemberParticipation> mostRegular =
       people.where((p) => p.attended > 0).toList()..sort((a, b) {
+        final role = (a.membership?.role == MemberRole.lider ? 1 : 0).compareTo(
+          b.membership?.role == MemberRole.lider ? 1 : 0,
+        );
+        if (role != 0) return role;
+        final rate = b.rate.compareTo(a.rate);
+        if (rate != 0) return rate;
         final count = b.attended.compareTo(a.attended);
-        return count != 0 ? count : b.rate.compareTo(a.rate);
+        return count != 0
+            ? count
+            : a.member.fullName.toLowerCase().compareTo(
+                b.member.fullName.toLowerCase(),
+              );
       });
   late final List<MemberParticipation> followUp =
       people.where((p) => p.needsFollowUp).toList()

@@ -31,6 +31,13 @@ class _MovementsTableState extends State<MovementsTable> {
   bool _ascending = false;
   int _page = 0;
   static const _pageSize = 20;
+  final _horizontal = ScrollController();
+  @override
+  void dispose() {
+    _horizontal.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final rows =
@@ -88,114 +95,148 @@ class _MovementsTableState extends State<MovementsTable> {
     final page = _page.clamp(0, pageCount - 1);
     final visibleRows = rows.skip(page * _pageSize).take(_pageSize);
     return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFDEDDEB)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              sortColumnIndex: _sortColumn,
-              sortAscending: _ascending,
-              headingRowColor: WidgetStateProperty.all(const Color(0xFFF0EEFC)),
-              dataRowMinHeight: 64,
-              dataRowMaxHeight: 108,
-              columns: [
-                DataColumn(label: const Text('Fecha'), onSort: sort),
-                const DataColumn(label: Text('Tipo')),
-                DataColumn(label: const Text('Nombre'), onSort: sort),
-                const DataColumn(label: Text('Descripción')),
-                DataColumn(
-                  label: const Text('Monto (S/)'),
-                  numeric: true,
-                  onSort: sort,
-                ),
-                const DataColumn(label: Text('Boleta')),
-                const DataColumn(label: Text('Acciones')),
-              ],
-              rows: visibleRows.map((row) {
-                final expense = row.expense;
-                return DataRow(
-                  cells: [
-                    DataCell(
-                      Text(
-                        DateFormat('dd/MM/yyyy').format(row.date.toDateTime()),
-                      ),
+          LayoutBuilder(
+            builder: (context, constraints) => Scrollbar(
+              controller: _horizontal,
+              thumbVisibility: true,
+              scrollbarOrientation: ScrollbarOrientation.bottom,
+              child: SingleChildScrollView(
+                controller: _horizontal,
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: DataTable(
+                    columnSpacing: 20,
+                    horizontalMargin: 16,
+                    headingRowHeight: 48,
+                    dividerThickness: .6,
+                    sortColumnIndex: _sortColumn,
+                    sortAscending: _ascending,
+                    headingRowColor: WidgetStateProperty.all(
+                      const Color(0xFFF0EEFC),
                     ),
-                    DataCell(
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: expense == null
-                              ? const Color(0xFFE7F5EE)
-                              : const Color(0xFFFCECEE),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(expense == null ? 'Ingreso' : 'Egreso'),
+                    dataRowMinHeight: 56,
+                    dataRowMaxHeight: 88,
+                    columns: [
+                      DataColumn(label: const Text('Fecha'), onSort: sort),
+                      const DataColumn(label: Text('Tipo')),
+                      DataColumn(label: const Text('Nombre'), onSort: sort),
+                      const DataColumn(label: Text('Descripción')),
+                      DataColumn(
+                        label: const Text('Monto (S/)'),
+                        numeric: true,
+                        onSort: sort,
                       ),
-                    ),
-                    DataCell(
-                      SizedBox(
-                        width: 160,
-                        child: Text(
-                          row.title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      SizedBox(
-                        width: 280,
-                        child: Text(
-                          row.description,
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        row.amount.formatted,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: row.amount.isNegative
-                              ? const Color(0xFFBA3E52)
-                              : const Color(0xFF218259),
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      expense?.receiptPath == null
-                          ? const Text('—')
-                          : TextButton.icon(
-                              onPressed: () =>
-                                  widget.onReceipt(expense!.receiptPath!),
-                              icon: const Icon(Icons.image_outlined),
-                              label: const Text('Ver'),
+                      const DataColumn(label: Text('Boleta')),
+                      const DataColumn(label: Text('Acciones')),
+                    ],
+                    rows: visibleRows.map((row) {
+                      final expense = row.expense;
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Text(
+                              DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(row.date.toDateTime()),
                             ),
-                    ),
-                    DataCell(
-                      expense == null
-                          ? widget.onEditOffering == null
+                          ),
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: expense == null
+                                    ? const Color(0xFFE7F5EE)
+                                    : const Color(0xFFFCECEE),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                expense == null ? 'Ingreso' : 'Egreso',
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 160,
+                              child: Tooltip(
+                                message: row.title,
+                                child: Text(
+                                  row.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 280,
+                              child: Tooltip(
+                                message: row.description,
+                                child: Text(
+                                  row.description,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              row.amount.formatted,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: row.amount.isNegative
+                                    ? const Color(0xFFBA3E52)
+                                    : const Color(0xFF218259),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            expense?.receiptPath == null
                                 ? const Text('—')
                                 : TextButton.icon(
                                     onPressed: () =>
-                                        widget.onEditOffering!(row.offering!),
+                                        widget.onReceipt(expense!.receiptPath!),
+                                    icon: const Icon(Icons.image_outlined),
+                                    label: const Text('Ver'),
+                                  ),
+                          ),
+                          DataCell(
+                            expense == null
+                                ? widget.onEditOffering == null
+                                      ? const Text('—')
+                                      : TextButton.icon(
+                                          onPressed: () =>
+                                              widget.onEditOffering!(
+                                                row.offering!,
+                                              ),
+                                          icon: const Icon(Icons.edit_outlined),
+                                          label: const Text('Editar'),
+                                        )
+                                : TextButton.icon(
+                                    onPressed: () => widget.onEdit(expense),
                                     icon: const Icon(Icons.edit_outlined),
                                     label: const Text('Editar'),
-                                  )
-                          : TextButton.icon(
-                              onPressed: () => widget.onEdit(expense),
-                              icon: const Icon(Icons.edit_outlined),
-                              label: const Text('Editar'),
-                            ),
-                    ),
-                  ],
-                );
-              }).toList(),
+                                  ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
             ),
           ),
           if (rows.isEmpty)
