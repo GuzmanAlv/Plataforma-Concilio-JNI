@@ -115,6 +115,32 @@ final class SupabaseMembersRepository {
         .single();
   }
 
+  Future<void> edit({
+    required String memberId,
+    required String fullName,
+    required CivilDate birthDate,
+    required GroupId groupId,
+    required MemberRole role,
+    required CivilDate effectiveDate,
+  }) async {
+    requireNonEmpty(fullName, 'El nombre completo');
+    CouncilPeriod.official.requireDate(effectiveDate);
+    if (birthDate > CivilDate.today()) {
+      throw ArgumentError('La fecha de nacimiento no puede ser futura.');
+    }
+    await _client.rpc(
+      'editar_integrante',
+      params: {
+        'p_integrante_id': memberId,
+        'p_nombre_completo': fullName.trim(),
+        'p_fecha_nacimiento': birthDate.toString(),
+        'p_grupo_id': groupId.name,
+        'p_rol': role.name,
+        'p_fecha': effectiveDate.toString(),
+      },
+    );
+  }
+
   Future<String> changeGroup({
     required String memberId,
     required GroupId groupId,

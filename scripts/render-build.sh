@@ -52,3 +52,15 @@ flutter --suppress-analytics build web --release --no-pub \
   --no-web-resources-cdn \
   --dart-define="SUPABASE_URL=$SUPABASE_URL" \
   --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY"
+
+# The signed APK is built separately; signing material never goes to Render.
+: "${APK_DOWNLOAD_URL:?Configure APK_DOWNLOAD_URL with the published signed APK.}"
+: "${APK_SHA256:?Configure APK_SHA256 with its verified checksum.}"
+if [[ "$APK_DOWNLOAD_URL" != https://* ]] || [[ ! "$APK_SHA256" =~ ^[a-fA-F0-9]{64}$ ]]; then
+  echo "APK_DOWNLOAD_URL must use HTTPS and APK_SHA256 must be a SHA-256 digest." >&2
+  exit 1
+fi
+mkdir -p build/web/downloads
+curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+  "$APK_DOWNLOAD_URL" -o build/web/downloads/concilio-jni-dreamrs.apk
+printf '%s  %s\n' "$APK_SHA256" 'build/web/downloads/concilio-jni-dreamrs.apk' | sha256sum --check --status

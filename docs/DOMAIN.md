@@ -50,4 +50,6 @@ Para egresos con foto, `createExpense` recibe `Uint8List` y tipo MIME. Se puede 
 
 ## Verificación
 
+Los egresos incorporan `Expense.name` (`egresos.nombre`) para el nombre del gasto; `concept` mantiene su descripción. El formulario admite boleta opcional. Al guardar conserva un UUID por envío, congela los datos durante los reintentos y reutiliza la ruta de la foto ya subida. El repositorio recupera un registro existente por ese UUID y reconcilia conflictos de clave primaria; un timeout después del commit no genera un segundo gasto. Guardar correctamente invalida saldo, evolución y movimientos en Riverpod.
+
 Ejecutar `flutter test test/domain`. Las pruebas cubren precisión monetaria y redondeo, netos negativos, fechas inválidas, sábados y límites de periodo, edad/cumpleaños, traslado con fin exclusivo, contratos JSON y payloads de asistencia.

@@ -1,5 +1,7 @@
 # Concilio JNI Dreamrs
 
+**Acceso actual:** los roles de acceso están desactivados temporalmente. Todas las cuentas que inician sesión con correo y contraseña tienen los mismos permisos, sin requerir una fila en `perfiles`. Los roles juveniles Líder/Integrante permanecen. Consulta [el estado de conexión](docs/CONNECTION.md).
+
 Base modular en Flutter para **Web responsiva y Android**, con Supabase y despliegue como Static Site en Render. Ciclo oficial: **noviembre de 2026 a octubre de 2027**. Moneda: **PEN (S/)**.
 
 ## Primera entrega
@@ -11,9 +13,29 @@ Base modular en Flutter para **Web responsiva y Android**, con Supabase y despli
 - Migración SQL con RLS, Storage privado, RPC transaccionales, caja auditada y configuración de versiones del APK.
 - Proyecto Android, configuración de firma, Render SPA y CI para análisis, pruebas y builds Web/APK debug.
 
-**Alcance:** las vistas iniciales consultan datos reales cuando se configura Supabase. Sin configuración funcionan como vista previa vacía. Los repositorios y RPC incluyen operaciones de escritura para completar los formularios en la siguiente etapa. Aún faltan las pantallas de alta/edición/baja, traslados, toma/corrección de asistencia, registro de movimientos/subida de fotos y los insights de constancia/ausencias. El visor de comprobantes ya consulta URLs firmadas. La comprobación de actualizaciones de APK tiene modelo y registro SQL; su interfaz se incorpora después.
+**Alcance actual:** con Supabase configurado se pueden registrar y editar integrantes (incluido traslado de grupo con historial), tomar y corregir asistencias, guardar y corregir ofrendas, y registrar y editar egresos con comprobantes opcionales. El Dashboard incluye constancia y seguimiento. Sin configuración, la aplicación muestra una vista previa sin guardado. Quedan pendientes las interfaces de baja de integrantes y comprobación de actualizaciones de APK.
 
 ## Ejecutar
+
+**Ofrendas:** `Agregar ofrenda del sábado` guarda únicamente lo recogido, sin deducciones ni ingreso inmediato a caja. `Agregar ofrenda mensual` precarga la suma de los sábados y permite confirmar o ajustar el total (con motivo si difiere del acumulado). El 10% del distrito y S/ 10.00 de colaboración se aplican **una sola vez por mes**. Solo el neto confirmado afecta caja y gráfico. `Dashboard de caja / Ofrendas por sábado` alterna la sección principal con una tabla mensual de sábados. Ver [reglas del cierre mensual](docs/MONTHLY_OFFERINGS.md).
+
+**Diseño de asistencia:** el selector de mes incluye navegación anterior/siguiente, año y cantidad de sábados. Las tarjetas de cada sábado muestran estado de registro, avance de los cuatro grupos y presentes, ausentes y convocados por grupo al desplegarlas. Un grupo pendiente no se cuenta como ausente.
+
+**Navegación y seguimiento:** Dashboard y Asistencia están separados, con Dashboard primero. El registro sabatino empieza el 28/11/2026 y se organiza por meses, con resúmenes por grupo y correcciones. El Dashboard incluye constancia y seguimiento. Tesorería muestra una tabla con edición de egresos; su botón de alta está centrado bajo el gráfico. Ver [detalle y reglas de indicadores](docs/DASHBOARD_ATTENDANCE.md).
+
+**Egresos:** `Tesorería → Agregar egreso` registra nombre, monto en soles, fecha del ciclo y descripción, con foto de boleta opcional (máximo 10 MiB). Los comprobantes van al Storage privado. El saldo, el gráfico y los movimientos se recargan tras guardar. Cada envío conserva su UUID para reconciliar reintentos sin duplicar gastos. La migración `20261127035725_expense_name.sql` añade el nombre del gasto y está aplicada en Supabase.
+
+El botón `Nuevo integrante` está centrado debajo del recuadro/listado del directorio.
+
+**Edición de integrantes:** el directorio muestra nombre, edad, fecha de cumpleaños, rol y grupo. Tocar la fila o su lápiz abre los datos precargados. Nombre, nacimiento y asignación se guardan en una transacción con `editar_integrante` (migración `20261128001908_edit_member_details.sql`, aplicada en Supabase). Cambiar grupo o rol requiere una fecha efectiva posterior al inicio de la asignación vigente, dentro del ciclo y sin fechas futuras. Si se mantiene la asignación, no se generan entradas adicionales de historial. Las asistencias guardadas conservan sus datos históricos.
+
+**Fechas y filtros:** los formularios comparten campos de fecha con escritura `dd/mm/aaaa` y calendario; el nacimiento abre directamente la selección de año. Los filtros de grupo y periodo usan menús con estilo uniforme. `Elegir rango` permite seleccionar o escribir Desde/Hasta, con accesos al ciclo completo o al mes de la fecha inicial; valida límites y orden antes de aplicar. Los diálogos se ajustan al ancho disponible y permiten desplazamiento en móviles.
+
+**Toma de asistencia:** muestra directamente la lista del grupo, presentes/ausentes y barra de participación, sin buscador interno. `Marcar todos` y `Desmarcar todos` se aplican a todo el grupo.
+
+**Rendimiento:** las consultas exitosas se conservan en memoria durante cinco minutos para reutilizarlas al navegar. Guardar datos o cambiar de cuenta invalida las cachés correspondientes; las marcas editables de asistencia siempre se consultan al abrir el formulario. El botón `Actualizar datos` permite consultar cambios de otros usuarios. El directorio muestra 30 integrantes por página y Tesorería 20 movimientos por página. Ver [mediciones y reglas de caché](docs/PERFORMANCE.md).
+
+**Actualización — registro de integrantes:** disponible en `Integrantes → Nuevo integrante` para perfiles `admin` y `secretaria`. Incluye nombre, nacimiento, edad automática, grupo, rol y fecha de ingreso. Guarda mediante la RPC `crear_integrante` y actualiza el directorio. Sin Supabase se puede abrir el formulario en vista previa, con guardado deshabilitado. Las pantallas de edición/baja y traslado siguen pendientes.
 
 Requiere **Flutter 3.44.4 / Dart 3.12.2**, fijados en CI y Render. El lockfile está versionado.
 
@@ -45,7 +67,7 @@ El APK debug sirve para pruebas; la distribución requiere firma release. La Web
 | Entrega | Ubicación |
 | --- | --- |
 | Arquitectura de carpetas y decisiones | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| SQL completo | [supabase/migrations/202611250001_initial_schema.sql](supabase/migrations/202611250001_initial_schema.sql) |
+| SQL completo | [supabase/migrations/20261125164602_concilio_initial_schema.sql](supabase/migrations/20261125164602_concilio_initial_schema.sql) |
 | Puesta en marcha, permisos y RPC | [docs/SUPABASE.md](docs/SUPABASE.md) |
 | Modelos y contratos de datos | [docs/DOMAIN.md](docs/DOMAIN.md) |
 | Web/Render y APK Android | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |

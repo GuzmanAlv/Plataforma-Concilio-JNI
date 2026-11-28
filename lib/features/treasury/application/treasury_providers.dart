@@ -1,16 +1,42 @@
+import '../../../core/providers/request_cache.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/domain/civil_date.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../data/supabase_treasury_repository.dart';
 import '../domain/treasury.dart';
 
+final offeringMonthsProvider = FutureProvider.autoDispose<List<OfferingMonth>>((
+  ref,
+) async {
+  ref.watch(authIdentityProvider);
+  final client = ref.watch(supabaseClientProvider);
+  if (client == null) return OfferingMonth.emptyCycle();
+  final data = await SupabaseTreasuryRepository(client).loadOfferingMonths();
+  ref.cacheSuccess();
+  return data;
+});
+
+final saturdayOfferingsProvider =
+    FutureProvider.autoDispose<List<SaturdayOffering>>((ref) async {
+      ref.watch(authIdentityProvider);
+      final client = ref.watch(supabaseClientProvider);
+      if (client == null) return [];
+      final data = await SupabaseTreasuryRepository(
+        client,
+      ).loadSaturdayOfferings();
+      ref.cacheSuccess();
+      return data;
+    });
+
 final cashSummaryProvider = FutureProvider.autoDispose<CashSummary>((
   ref,
 ) async {
-  ref.watch(authStateProvider);
+  ref.watch(authIdentityProvider);
   final client = ref.watch(supabaseClientProvider);
   if (client == null) return const CashSummary.zero();
-  return SupabaseTreasuryRepository(client).loadSummary();
+  final data = await SupabaseTreasuryRepository(client).loadSummary();
+  ref.cacheSuccess();
+  return data;
 });
 
 final cashEvolutionProvider = FutureProvider.autoDispose
@@ -18,19 +44,21 @@ final cashEvolutionProvider = FutureProvider.autoDispose
       ref,
       dates,
     ) async {
-      ref.watch(authStateProvider);
+      ref.watch(authIdentityProvider);
       final client = ref.watch(supabaseClientProvider);
       if (client == null) return [];
-      return SupabaseTreasuryRepository(
+      final data = await SupabaseTreasuryRepository(
         client,
       ).loadEvolution(start: dates.start, end: dates.end);
+      ref.cacheSuccess();
+      return data;
     });
 
 final treasuryMovementsProvider =
     FutureProvider.autoDispose<
       ({List<Offering> offerings, List<Expense> expenses})
     >((ref) async {
-      ref.watch(authStateProvider);
+      ref.watch(authIdentityProvider);
       final client = ref.watch(supabaseClientProvider);
       if (client == null) {
         return (offerings: <Offering>[], expenses: <Expense>[]);
@@ -40,5 +68,6 @@ final treasuryMovementsProvider =
         repository.loadOfferings(),
         repository.loadExpenses(),
       ).wait;
+      ref.cacheSuccess();
       return (offerings: results.$1, expenses: results.$2);
     });

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/attendance/presentation/attendance_page.dart';
+import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/members/presentation/members_page.dart';
 import '../../features/treasury/presentation/treasury_page.dart';
 import '../../features/inventory/presentation/inventory_page.dart';
@@ -10,22 +11,47 @@ import '../shell/responsive_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
-    initialLocation: '/asistencia',
+    initialLocation: '/dashboard',
     routes: [
-      GoRoute(path: '/', redirect: (context, state) => '/asistencia'),
+      GoRoute(path: '/', redirect: (context, state) => '/dashboard'),
       ShellRoute(
         builder: (context, state, child) =>
             ResponsiveShell(location: state.uri.path, child: child),
         routes: [
           GoRoute(
-            path: '/asistencia',
-            builder: (_, _) => const AttendancePage(),
+            path: '/dashboard',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const DashboardPage(),
+            ),
           ),
-          GoRoute(path: '/integrantes', builder: (_, _) => const MembersPage()),
-          GoRoute(path: '/tesoreria', builder: (_, _) => const TreasuryPage()),
+          GoRoute(
+            path: '/asistencia',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const AttendancePage(),
+            ),
+          ),
+          GoRoute(
+            path: '/integrantes',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const MembersPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/tesoreria',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const TreasuryPage(),
+            ),
+          ),
           GoRoute(
             path: '/inventario',
-            builder: (_, _) => const InventoryPage(),
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const InventoryPage(),
+            ),
           ),
         ],
       ),
@@ -33,7 +59,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: FilledButton(
-          onPressed: () => context.go('/asistencia'),
+          onPressed: () => context.go('/dashboard'),
           child: const Text('Volver al inicio'),
         ),
       ),

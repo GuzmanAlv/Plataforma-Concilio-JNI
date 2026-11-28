@@ -53,3 +53,4 @@ app.*.map.json
 *.keystore
 /android/key.properties
 /.cache/
+/supabase/.temp/

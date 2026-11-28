@@ -5,13 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/supabase/supabase_providers.dart';
 import '../../features/auth/presentation/access_gate.dart';
 import '../theme/app_theme.dart';
+import '../refresh_data.dart';
+import '../../shared/widgets/dreamrs_mark.dart';
 
 const appDestinations = <({String path, String label, IconData icon})>[
-  (
-    path: '/asistencia',
-    label: 'Asistencia & Dashboard',
-    icon: Icons.insights_outlined,
-  ),
+  (path: '/dashboard', label: 'Dashboard', icon: Icons.insights_outlined),
+  (path: '/asistencia', label: 'Asistencia', icon: Icons.fact_check_outlined),
   (path: '/integrantes', label: 'Integrantes', icon: Icons.people_outline),
   (
     path: '/tesoreria',
@@ -34,7 +33,7 @@ class ResponsiveShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wide = MediaQuery.sizeOf(context).width >= 1050;
     final client = ref.watch(supabaseClientProvider);
-    ref.watch(authStateProvider);
+    ref.watch(authIdentityProvider);
     final signedIn = client?.auth.currentSession != null;
     return Scaffold(
       appBar: AppBar(
@@ -55,15 +54,25 @@ class ResponsiveShell extends ConsumerWidget {
                         ? const Color(0xFFF0EEFC)
                         : null,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 10,
                       vertical: 14,
                     ),
                   ),
-                  onPressed: () => context.go(destination.path),
+                  onPressed: () {
+                    if (location != destination.path) {
+                      context.go(destination.path);
+                    }
+                  },
                   icon: Icon(destination.icon, size: 19),
                   label: Text(destination.label),
                 ),
               ),
+            ),
+          if (signedIn)
+            IconButton(
+              tooltip: 'Actualizar datos',
+              onPressed: () => refreshAppData(ref),
+              icon: const Icon(Icons.refresh, size: 20),
             ),
           if (signedIn)
             IconButton(
@@ -104,7 +113,9 @@ class ResponsiveShell extends ConsumerWidget {
                         selected: destination.path == location,
                         onTap: () {
                           Navigator.of(context).pop();
-                          context.go(destination.path);
+                          if (location != destination.path) {
+                            context.go(destination.path);
+                          }
                         },
                       ),
                     ),
@@ -175,15 +186,7 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: AppTheme.purple,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
-      ),
+      const DreamrsMark(),
       if (!compact) const SizedBox(width: 10),
       if (!compact)
         const Column(

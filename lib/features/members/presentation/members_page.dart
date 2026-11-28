@@ -10,6 +10,13 @@ import '../../../shared/widgets/section_header.dart';
 import '../../groups/domain/group.dart';
 import '../application/members_providers.dart';
 import '../data/supabase_members_repository.dart';
+import '../../../core/supabase/supabase_providers.dart';
+import 'new_member_dialog.dart';
+import 'member_directory_row.dart';
+import '../../../shared/widgets/styled_select.dart';
+import '../../attendance/application/attendance_sheet_provider.dart';
+import '../../attendance/application/attendance_providers.dart';
+import '../../dashboard/application/dashboard_providers.dart';
 
 class MembersPage extends ConsumerStatefulWidget {
   const MembersPage({super.key});
@@ -20,6 +27,57 @@ class MembersPage extends ConsumerStatefulWidget {
 class _MembersPageState extends ConsumerState<MembersPage> {
   String _search = '';
   GroupId? _group;
+  int _page = 0;
+  static const _pageSize = 30;
+
+  Future<void> _add([MemberDirectoryEntry? entry]) async {
+    final client = ref.read(supabaseClientProvider);
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => NewMemberDialog(
+        initialEntry: entry,
+        onSave: client == null
+            ? null
+            : (name, birth, group, role, start) async {
+                if (entry != null) {
+                  await SupabaseMembersRepository(client).edit(
+                    memberId: entry.member.id,
+                    fullName: name,
+                    birthDate: birth,
+                    groupId: group,
+                    role: role,
+                    effectiveDate: start,
+                  );
+                  return;
+                }
+                await SupabaseMembersRepository(client).create(
+                  fullName: name,
+                  birthDate: birth,
+                  groupId: group,
+                  role: role,
+                  startDate: start,
+                );
+              },
+      ),
+    );
+    if (saved == true && mounted) {
+      ref.invalidate(memberDirectoryProvider);
+      ref.invalidate(attendanceRosterProvider);
+      ref.invalidate(attendanceSheetProvider);
+      ref.invalidate(attendanceSummaryProvider);
+      ref.invalidate(dashboardInsightsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            entry == null
+                ? 'Integrante registrado correctamente.'
+                : 'Datos actualizados correctamente.',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Column(
@@ -40,16 +98,18 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                 labelText: 'Buscar por nombre',
                 prefixIcon: Icon(Icons.search),
               ),
-              onChanged: (value) =>
-                  setState(() => _search = value.trim().toLowerCase()),
+              onChanged: (value) => setState(() {
+                _search = value.trim().toLowerCase();
+                _page = 0;
+              }),
             ),
           ),
           SizedBox(
             width: 220,
-            child: DropdownButtonFormField<GroupId?>(
-              isExpanded: true,
-              initialValue: null,
-              decoration: const InputDecoration(labelText: 'Grupo'),
+            child: StyledSelect<GroupId?>(
+              value: _group,
+              label: 'Filtrar por grupo',
+              icon: Icons.groups_outlined,
               items: [
                 const DropdownMenuItem<GroupId?>(
                   value: null,
@@ -58,11 +118,24 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                 ...GroupId.values.map(
                   (group) => DropdownMenuItem(
                     value: group,
-                    child: Text(group.groupName),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 10,
+                          color: AppTheme.groupColors[group.name],
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(group.groupName)),
+                      ],
+                    ),
                   ),
                 ),
               ],
-              onChanged: (value) => setState(() => _group = value),
+              onChanged: (value) => setState(() {
+                _group = value;
+                _page = 0;
+              }),
             ),
           ),
         ],
@@ -97,10 +170,16 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                       .nextBirthdayOnOrAfter(today)
                       .compareTo(b.member.nextBirthdayOnOrAfter(today)),
                 );
+          final pageCount = (filtered.length / _pageSize).ceil().clamp(
+            1,
+            1000000,
+          );
+          final page = _page.clamp(0, pageCount - 1);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
+                clipBehavior: Clip.antiAlias,
                 child: filtered.isEmpty
                     ? EmptyState(
                         icon: Icons.people_outline,
@@ -112,40 +191,54 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                             : 'Prueba con otro nombre o grupo.',
                       )
                     : Column(
-                        children: filtered.map((entry) {
-                          final group = entry.membership?.groupId;
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: group == null
-                                  ? const Color(0xFFF0EEFC)
-                                  : AppTheme.groupColors[group.name]!
-                                        .withValues(alpha: 0.12),
-                              child: Text(
-                                entry.member.fullName
-                                    .substring(0, 1)
-                                    .toUpperCase(),
-                              ),
-                            ),
-                            title: Text(entry.member.fullName),
-                            subtitle: Text(
-                              '${entry.member.ageOn(today)} años · ${entry.membership?.role.label ?? 'Sin asignación'}',
-                            ),
-                            trailing: group == null
-                                ? null
-                                : Text(
-                                    group.label,
-                                    style: TextStyle(
-                                      color: AppTheme.groupColors[group.name],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                          );
-                        }).toList(),
+                        children: filtered
+                            .skip(page * _pageSize)
+                            .take(_pageSize)
+                            .map((entry) {
+                              return MemberDirectoryRow(
+                                entry: entry,
+                                today: today,
+                                onEdit: () => _add(entry),
+                              );
+                            })
+                            .toList(),
                       ),
+              ),
+              if (pageCount > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    children: [
+                      IconButton(
+                        tooltip: 'Integrantes anteriores',
+                        onPressed: page == 0
+                            ? null
+                            : () => setState(() => _page = page - 1),
+                        icon: const Icon(Icons.chevron_left),
+                      ),
+                      Text(
+                        '${filtered.length} integrantes · Página ${page + 1} de $pageCount',
+                      ),
+                      IconButton(
+                        tooltip: 'Integrantes siguientes',
+                        onPressed: page + 1 == pageCount
+                            ? null
+                            : () => setState(() => _page = page + 1),
+                        icon: const Icon(Icons.chevron_right),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Center(
+                child: FilledButton.icon(
+                  onPressed: _add,
+                  icon: const Icon(Icons.person_add_alt_1),
+                  label: const Text('Nuevo integrante'),
+                ),
               ),
               const SizedBox(height: 24),
               Card(

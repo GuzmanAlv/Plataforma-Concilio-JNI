@@ -104,9 +104,9 @@ final class SupabaseTreasuryRepository {
   Future<List<Offering>> loadOfferings() async {
     final rows = await loadAllRows(
       (from, to) async => await _client
-          .from('ofrendas')
+          .from('ofrendas_mensuales')
           .select()
-          .order('fecha', ascending: false)
+          .order('mes', ascending: false)
           .order('id')
           .range(from, to),
     );
@@ -134,21 +134,60 @@ final class SupabaseTreasuryRepository {
         .single();
   }
 
-  Future<Offering> saveOffering({
+  Future<List<OfferingMonth>> loadOfferingMonths() async {
+    final rows = await _client
+        .from('resumen_ofrendas_mensuales')
+        .select()
+        .order('mes');
+    return rows.map(OfferingMonth.fromJson).toList(growable: false);
+  }
+
+  Future<List<SaturdayOffering>> loadSaturdayOfferings() async {
+    final rows = await loadAllRows(
+      (from, to) async => await _client
+          .from('ofrendas_sabatinas')
+          .select('id,fecha,monto_bruto')
+          .order('fecha')
+          .range(from, to),
+    );
+    return rows.map(SaturdayOffering.fromJson).toList(growable: false);
+  }
+
+  Future<void> confirmMonth({
+    required OfferingMonth month,
+    required Money gross,
+    required String reason,
+  }) async {
+    OfferingBreakdown(gross);
+    await _client.rpc(
+      'confirmar_ofrenda_mensual',
+      params: {
+        'p_mes': month.month.toString(),
+        'p_monto_bruto': gross.decimal,
+        'p_fuente_revision': month.sourceRevision,
+        'p_version': month.version,
+        'p_ajuste_razon': reason.trim(),
+      },
+    );
+  }
+
+  Future<SaturdayOffering> saveSaturdayOffering({
     required CivilDate date,
     required Money gross,
   }) async {
     CouncilPeriod.official.requireDate(date, saturday: true);
-    OfferingBreakdown(gross);
+    if (gross.cents <= 0) {
+      throw ArgumentError('El monto debe ser mayor a cero.');
+    }
     final row = await _client
-        .from('ofrendas')
+        .from('ofrendas_sabatinas')
         .upsert({
           'fecha': date.toString(),
           'monto_bruto': gross.decimal,
         }, onConflict: 'fecha')
         .select()
         .single();
-    return Offering.fromJson(row);
+    return SaturdayOffering.fromJson(row);
   }
 
   /// Works with XFile.readAsBytes() on Web and Android; never requires dart:io.
@@ -184,37 +223,80 @@ final class SupabaseTreasuryRepository {
   }
 
   Future<Expense> createExpense({
+    String? id,
+    String name = 'Gasto',
     required CivilDate date,
     required Money amount,
     required String concept,
     Uint8List? receiptBytes,
     String? receiptMimeType,
+    String? receiptPath,
   }) async {
     CouncilPeriod.official.requireDate(date);
     requireNonEmpty(concept, 'El concepto');
+    requireNonEmpty(name, 'El nombre del gasto');
+    if (receiptBytes != null && receiptPath != null) {
+      throw ArgumentError('Envía una imagen o una ruta existente.');
+    }
     if (amount.cents <= 0) {
       throw ArgumentError('El egreso debe ser mayor a cero.');
     }
     if (receiptBytes != null && receiptMimeType == null) {
       throw ArgumentError('Falta el tipo MIME de la imagen.');
     }
-    String? path;
+    final expenseId = id ?? const Uuid().v4();
+    final existing = await findExpense(expenseId);
+    if (existing != null) return existing;
+    String? path = receiptPath;
     if (receiptBytes != null) {
       path = await uploadReceipt(receiptBytes, mimeType: receiptMimeType!);
     }
-    final expenseId = const Uuid().v4();
     // Never delete the uploaded object on an ambiguous network failure: an
     // INSERT may still commit after another request reports the row absent.
     // Reconcile orphaned files separately, after pending writes have settled.
+    try {
+      final row = await _client
+          .from('egresos')
+          .insert({
+            'id': expenseId,
+            'fecha': date.toString(),
+            'monto': amount.decimal,
+            'concepto': concept.trim(),
+            'nombre': name.trim(),
+            'comprobante_path': path,
+          })
+          .select()
+          .single();
+      return Expense.fromJson(row);
+    } on PostgrestException catch (error) {
+      if (error.code == '23505') {
+        final saved = await findExpense(expenseId);
+        if (saved != null) return saved;
+      }
+      rethrow;
+    }
+  }
+
+  Future<Expense?> findExpense(String id) async {
     final row = await _client
         .from('egresos')
-        .insert({
-          'id': expenseId,
-          'fecha': date.toString(),
-          'monto': amount.decimal,
-          'concepto': concept.trim(),
-          'comprobante_path': path,
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+    return row == null ? null : Expense.fromJson(row);
+  }
+
+  Future<Expense> updateExpense(Expense expense) async {
+    final row = await _client
+        .from('egresos')
+        .update({
+          'nombre': expense.name.trim(),
+          'concepto': expense.concept.trim(),
+          'fecha': expense.date.toString(),
+          'monto': expense.amount.decimal,
+          'comprobante_path': expense.receiptPath,
         })
+        .eq('id', expense.id)
         .select()
         .single();
     return Expense.fromJson(row);

@@ -9,11 +9,15 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
   return client?.auth.onAuthStateChange ?? const Stream.empty();
 });
 
-/// Rebuilt on sign-in/sign-out so cached data cannot survive another session.
-final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
-  ref.watch(authStateProvider);
+/// A token refresh does not change data ownership. Recompute protected data
+/// only when the account (or its anonymous status) actually changes.
+final authIdentityProvider = Provider<String?>((ref) {
   final client = ref.watch(supabaseClientProvider);
-  final user = client?.auth.currentUser;
-  if (client == null || user == null) return null;
-  return client.from('perfiles').select().eq('user_id', user.id).maybeSingle();
+  return ref.watch(
+    authStateProvider.select((state) {
+      final user =
+          state.asData?.value.session?.user ?? client?.auth.currentUser;
+      return user == null ? null : '${user.id}:${user.isAnonymous}';
+    }),
+  );
 });

@@ -80,7 +80,8 @@ void main() {
     () {
       final offering = Offering.fromJson({
         'id': 'ofrenda-1',
-        'fecha': '2026-11-07',
+        'fecha_caja': '2026-11-28',
+        'mes': '2026-11-01',
         'monto_bruto': 100,
         'aporte_distrito': '10.00',
         'colaboracion_fija': '10.00',
@@ -98,10 +99,7 @@ void main() {
         settings.balance(offerings: [offering], expenses: [expense]).decimal,
         '104.50',
       );
-      expect(offering.toWriteJson(), {
-        'fecha': '2026-11-07',
-        'monto_bruto': '100.00',
-      });
+      expect(offering.toJson()['mes'], '2026-11-01');
       expect(
         Expense.fromJson(expense.toJson()).receiptPath,
         'egreso-1/boleta.jpg',
