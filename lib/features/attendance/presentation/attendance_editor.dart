@@ -30,7 +30,6 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
   Set<String>? _present;
   bool _busy = false;
   String? _error;
-  String _search = '';
   Future<void> _save() async {
     final client = ref.read(supabaseClientProvider);
     if (_busy ||
@@ -59,6 +58,7 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (mounted) {
+        ref.invalidate(attendanceRosterProvider(widget.date));
         setState(
           () => _error =
               'No se pudo guardar. Revisa tu conexión y vuelve a abrir la lista si hubo cambios de grupo.',
@@ -166,15 +166,6 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
-                      enabled: !_busy,
-                      decoration: const InputDecoration(
-                        labelText: 'Buscar integrante',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (value) =>
-                          setState(() => _search = value.trim().toLowerCase()),
-                    ),
                     Wrap(
                       spacing: 8,
                       children: [
@@ -203,55 +194,41 @@ class _AttendanceEditorState extends ConsumerState<AttendanceEditor> {
                           'No hay integrantes asignados a este grupo en esta fecha. Al guardar se registrará una sesión sin convocados.',
                         ),
                       ),
-                    if (sheet.roster.isNotEmpty &&
-                        !sheet.roster.any(
-                          (e) =>
-                              e.member.fullName.toLowerCase().contains(_search),
-                        ))
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('No hay coincidencias con ese nombre.'),
-                      ),
-                    ...sheet.roster
-                        .where(
-                          (e) =>
-                              e.member.fullName.toLowerCase().contains(_search),
-                        )
-                        .map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: CheckboxListTile(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                side: BorderSide(
-                                  color: _present!.contains(e.member.id)
-                                      ? const Color(0xFFD4CBF4)
-                                      : const Color(0xFFE8EAF2),
-                                ),
-                              ),
-                              tileColor: _present!.contains(e.member.id)
-                                  ? const Color(0xFFF7F5FD)
-                                  : Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              controlAffinity: ListTileControlAffinity.leading,
-                              title: Text(e.member.fullName),
-                              subtitle: Text(e.membership!.role.label),
-                              value: _present!.contains(e.member.id),
-                              onChanged: _busy
-                                  ? null
-                                  : (value) => setState(() {
-                                      if (value == true) {
-                                        _present!.add(e.member.id);
-                                      } else {
-                                        _present!.remove(e.member.id);
-                                      }
-                                    }),
+                    ...sheet.roster.map(
+                      (e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: CheckboxListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(
+                              color: _present!.contains(e.member.id)
+                                  ? const Color(0xFFD4CBF4)
+                                  : const Color(0xFFE8EAF2),
                             ),
                           ),
+                          tileColor: _present!.contains(e.member.id)
+                              ? const Color(0xFFF7F5FD)
+                              : Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          title: Text(e.member.fullName),
+                          subtitle: Text(e.membership!.role.label),
+                          value: _present!.contains(e.member.id),
+                          onChanged: _busy
+                              ? null
+                              : (value) => setState(() {
+                                  if (value == true) {
+                                    _present!.add(e.member.id);
+                                  } else {
+                                    _present!.remove(e.member.id);
+                                  }
+                                }),
                         ),
+                      ),
+                    ),
                     if (ref.watch(supabaseClientProvider) == null &&
                         widget.onSave == null)
                       const Text(

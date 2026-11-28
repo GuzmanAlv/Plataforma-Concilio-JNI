@@ -20,7 +20,7 @@ class AccessGate extends ConsumerWidget {
       );
     }
     final client = ref.watch(supabaseClientProvider);
-    ref.watch(authStateProvider);
+    ref.watch(authIdentityProvider);
     if (client == null) return child;
     if (client.auth.currentSession == null) return const _LoginForm();
     if (client.auth.currentUser?.isAnonymous == true) {

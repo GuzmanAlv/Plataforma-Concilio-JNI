@@ -18,16 +18,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) =>
             ResponsiveShell(location: state.uri.path, child: child),
         routes: [
-          GoRoute(path: '/dashboard', builder: (_, _) => const DashboardPage()),
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const DashboardPage(),
+            ),
+          ),
           GoRoute(
             path: '/asistencia',
-            builder: (_, _) => const AttendancePage(),
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const AttendancePage(),
+            ),
           ),
-          GoRoute(path: '/integrantes', builder: (_, _) => const MembersPage()),
-          GoRoute(path: '/tesoreria', builder: (_, _) => const TreasuryPage()),
+          GoRoute(
+            path: '/integrantes',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const MembersPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/tesoreria',
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const TreasuryPage(),
+            ),
+          ),
           GoRoute(
             path: '/inventario',
-            builder: (_, _) => const InventoryPage(),
+            pageBuilder: (_, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const InventoryPage(),
+            ),
           ),
         ],
       ),

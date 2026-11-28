@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/supabase/supabase_providers.dart';
 import '../../features/auth/presentation/access_gate.dart';
 import '../theme/app_theme.dart';
+import '../refresh_data.dart';
 
 const appDestinations = <({String path, String label, IconData icon})>[
   (path: '/dashboard', label: 'Dashboard', icon: Icons.insights_outlined),
@@ -31,7 +32,7 @@ class ResponsiveShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wide = MediaQuery.sizeOf(context).width >= 1050;
     final client = ref.watch(supabaseClientProvider);
-    ref.watch(authStateProvider);
+    ref.watch(authIdentityProvider);
     final signedIn = client?.auth.currentSession != null;
     return Scaffold(
       appBar: AppBar(
@@ -56,11 +57,21 @@ class ResponsiveShell extends ConsumerWidget {
                       vertical: 14,
                     ),
                   ),
-                  onPressed: () => context.go(destination.path),
+                  onPressed: () {
+                    if (location != destination.path) {
+                      context.go(destination.path);
+                    }
+                  },
                   icon: Icon(destination.icon, size: 19),
                   label: Text(destination.label),
                 ),
               ),
+            ),
+          if (signedIn)
+            IconButton(
+              tooltip: 'Actualizar datos',
+              onPressed: () => refreshAppData(ref),
+              icon: const Icon(Icons.refresh, size: 20),
             ),
           if (signedIn)
             IconButton(
@@ -101,7 +112,9 @@ class ResponsiveShell extends ConsumerWidget {
                         selected: destination.path == location,
                         onTap: () {
                           Navigator.of(context).pop();
-                          context.go(destination.path);
+                          if (location != destination.path) {
+                            context.go(destination.path);
+                          }
                         },
                       ),
                     ),

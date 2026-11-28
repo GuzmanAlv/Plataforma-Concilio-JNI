@@ -26,6 +26,8 @@ class MembersPage extends ConsumerStatefulWidget {
 class _MembersPageState extends ConsumerState<MembersPage> {
   String _search = '';
   GroupId? _group;
+  int _page = 0;
+  static const _pageSize = 30;
 
   Future<void> _add([MemberDirectoryEntry? entry]) async {
     final client = ref.read(supabaseClientProvider);
@@ -60,6 +62,7 @@ class _MembersPageState extends ConsumerState<MembersPage> {
     );
     if (saved == true && mounted) {
       ref.invalidate(memberDirectoryProvider);
+      ref.invalidate(attendanceRosterProvider);
       ref.invalidate(attendanceSheetProvider);
       ref.invalidate(attendanceSummaryProvider);
       ref.invalidate(dashboardInsightsProvider);
@@ -94,8 +97,10 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                 labelText: 'Buscar por nombre',
                 prefixIcon: Icon(Icons.search),
               ),
-              onChanged: (value) =>
-                  setState(() => _search = value.trim().toLowerCase()),
+              onChanged: (value) => setState(() {
+                _search = value.trim().toLowerCase();
+                _page = 0;
+              }),
             ),
           ),
           SizedBox(
@@ -126,7 +131,10 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                   ),
                 ),
               ],
-              onChanged: (value) => setState(() => _group = value),
+              onChanged: (value) => setState(() {
+                _group = value;
+                _page = 0;
+              }),
             ),
           ),
         ],
@@ -161,6 +169,11 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                       .nextBirthdayOnOrAfter(today)
                       .compareTo(b.member.nextBirthdayOnOrAfter(today)),
                 );
+          final pageCount = (filtered.length / _pageSize).ceil().clamp(
+            1,
+            1000000,
+          );
+          final page = _page.clamp(0, pageCount - 1);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -176,7 +189,9 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                             : 'Prueba con otro nombre o grupo.',
                       )
                     : Column(
-                        children: filtered.map((entry) {
+                        children: filtered.skip(page * _pageSize).take(_pageSize).map((
+                          entry,
+                        ) {
                           final group = entry.membership?.groupId;
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(
@@ -233,6 +248,34 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                         }).toList(),
                       ),
               ),
+              if (pageCount > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    children: [
+                      IconButton(
+                        tooltip: 'Integrantes anteriores',
+                        onPressed: page == 0
+                            ? null
+                            : () => setState(() => _page = page - 1),
+                        icon: const Icon(Icons.chevron_left),
+                      ),
+                      Text(
+                        '${filtered.length} integrantes · Página ${page + 1} de $pageCount',
+                      ),
+                      IconButton(
+                        tooltip: 'Integrantes siguientes',
+                        onPressed: page + 1 == pageCount
+                            ? null
+                            : () => setState(() => _page = page + 1),
+                        icon: const Icon(Icons.chevron_right),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               Center(
                 child: FilledButton.icon(

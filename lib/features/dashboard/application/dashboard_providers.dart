@@ -1,3 +1,4 @@
+import '../../../core/providers/request_cache.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/domain/civil_date.dart';
 import '../../../core/providers/today_provider.dart';
@@ -12,8 +13,9 @@ final dashboardInsightsProvider = FutureProvider.autoDispose
       ref,
       dates,
     ) async {
-      ref.watch(authStateProvider);
+      ref.watch(authIdentityProvider);
       final client = ref.watch(supabaseClientProvider);
+      final today = ref.watch(todayProvider);
       final membersFuture = ref.watch(memberDirectoryProvider.future);
       final pointsFuture = ref.watch(attendanceSummaryProvider(dates).future);
       final rowsFuture = client == null
@@ -30,7 +32,7 @@ final dashboardInsightsProvider = FutureProvider.autoDispose
                   .range(from, to),
             );
       final results = await (membersFuture, pointsFuture, rowsFuture).wait;
-      return AttendanceInsights(
+      final insights = AttendanceInsights(
         members: results.$1.map((e) => e.member),
         points: results.$2,
         snapshots: results.$3.map(
@@ -44,6 +46,8 @@ final dashboardInsightsProvider = FutureProvider.autoDispose
         ),
         start: dates.start,
         end: dates.end,
-        today: ref.watch(todayProvider),
+        today: today,
       );
+      if (client != null) ref.cacheSuccess();
+      return insights;
     });

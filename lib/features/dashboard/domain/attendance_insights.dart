@@ -20,7 +20,7 @@ class MemberParticipation {
     : records = records.toList()..sort((a, b) => b.date.compareTo(a.date));
   final Member member;
   final List<AttendanceSnapshot> records;
-  int get attended => records.where((r) => r.present).length;
+  late final int attended = records.where((r) => r.present).length;
   int get invited => records.length;
   double get rate => invited == 0 ? 0 : attended / invited;
   CivilDate? get lastPresence =>
@@ -50,11 +50,13 @@ class AttendanceInsights {
               r.date <= today,
         )
         .toList();
+    final byMember = <String, List<AttendanceSnapshot>>{};
+    for (final record in valid) {
+      (byMember[record.memberId] ??= []).add(record);
+    }
     people = members
         .where((m) => m.active)
-        .map(
-          (m) => MemberParticipation(m, valid.where((r) => r.memberId == m.id)),
-        )
+        .map((m) => MemberParticipation(m, byMember[m.id] ?? const []))
         .toList();
     sessions = points
         .where(
@@ -119,15 +121,15 @@ class AttendanceInsights {
     return previous == null || last == null ? null : (last - previous) * 100;
   }
 
-  List<MemberParticipation> get mostRegular =>
+  late final List<MemberParticipation> mostRegular =
       people.where((p) => p.attended > 0).toList()..sort((a, b) {
         final count = b.attended.compareTo(a.attended);
         return count != 0 ? count : b.rate.compareTo(a.rate);
       });
-  List<MemberParticipation> get followUp =>
+  late final List<MemberParticipation> followUp =
       people.where((p) => p.needsFollowUp).toList()
         ..sort((a, b) => a.rate.compareTo(b.rate));
-  List<MemberParticipation> get leastRegular =>
+  late final List<MemberParticipation> leastRegular =
       people.where((p) => p.invited >= 3).toList()
         ..sort((a, b) => a.rate.compareTo(b.rate));
   int get completeSaturdays {

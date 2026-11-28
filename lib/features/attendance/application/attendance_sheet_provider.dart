@@ -4,6 +4,7 @@ import '../../../core/supabase/supabase_providers.dart';
 import '../../groups/domain/group.dart';
 import '../../members/data/supabase_members_repository.dart';
 import '../data/supabase_attendance_repository.dart';
+import '../../../core/providers/request_cache.dart';
 
 class AttendanceSheet {
   const AttendanceSheet({
@@ -16,19 +17,33 @@ class AttendanceSheet {
   final bool saved;
 }
 
+// One historical directory request per Saturday, reused by the four groups.
+// Session marks themselves are always reloaded when opening the editor.
+final attendanceRosterProvider = FutureProvider.autoDispose
+    .family<List<MemberDirectoryEntry>, CivilDate>((ref, date) async {
+      ref.watch(authIdentityProvider);
+      final client = ref.watch(supabaseClientProvider);
+      if (client == null) return [];
+      final data = await SupabaseMembersRepository(
+        client,
+      ).loadDirectory(onDate: date);
+      ref.cacheSuccess();
+      return data;
+    });
+
 final attendanceSheetProvider = FutureProvider.autoDispose
     .family<AttendanceSheet, ({CivilDate date, GroupId group})>((
       ref,
       key,
     ) async {
-      ref.watch(authStateProvider);
+      ref.watch(authIdentityProvider);
       final client = ref.watch(supabaseClientProvider);
       if (client == null) {
         return const AttendanceSheet(roster: [], present: {}, saved: false);
       }
       final repository = SupabaseAttendanceRepository(client);
       final results = await (
-        SupabaseMembersRepository(client).loadDirectory(onDate: key.date),
+        ref.watch(attendanceRosterProvider(key.date).future),
         repository.loadSession(groupId: key.group, date: key.date),
       ).wait;
       final records = results.$2 == null

@@ -29,6 +29,8 @@ class MovementsTable extends StatefulWidget {
 class _MovementsTableState extends State<MovementsTable> {
   int _sortColumn = 0;
   bool _ascending = false;
+  int _page = 0;
+  static const _pageSize = 20;
   @override
   Widget build(BuildContext context) {
     final rows =
@@ -79,7 +81,11 @@ class _MovementsTableState extends State<MovementsTable> {
     void sort(int column, bool ascending) => setState(() {
       _sortColumn = column;
       _ascending = ascending;
+      _page = 0;
     });
+    final pageCount = (rows.length / _pageSize).ceil().clamp(1, 1000000);
+    final page = _page.clamp(0, pageCount - 1);
+    final visibleRows = rows.skip(page * _pageSize).take(_pageSize);
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,7 +111,7 @@ class _MovementsTableState extends State<MovementsTable> {
                 const DataColumn(label: Text('Boleta')),
                 const DataColumn(label: Text('Acciones')),
               ],
-              rows: rows.map((row) {
+              rows: visibleRows.map((row) {
                 final expense = row.expense;
                 return DataRow(
                   cells: [
@@ -200,8 +206,30 @@ class _MovementsTableState extends State<MovementsTable> {
             ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(
-              '${rows.length} movimientos · Desliza la tabla para ver todas las columnas.',
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  '${rows.length} movimientos · Página ${page + 1} de $pageCount',
+                ),
+                IconButton(
+                  tooltip: 'Movimientos anteriores',
+                  onPressed: page == 0
+                      ? null
+                      : () => setState(() => _page = page - 1),
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                IconButton(
+                  tooltip: 'Movimientos siguientes',
+                  onPressed: page + 1 == pageCount
+                      ? null
+                      : () => setState(() => _page = page + 1),
+                  icon: const Icon(Icons.chevron_right),
+                ),
+                const Text('Desliza para ver todas las columnas.'),
+              ],
             ),
           ),
         ],

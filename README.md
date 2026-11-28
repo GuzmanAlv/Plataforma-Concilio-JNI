@@ -31,7 +31,9 @@ El botón `Nuevo integrante` está centrado debajo del recuadro/listado del dire
 
 **Fechas y filtros:** los formularios comparten campos de fecha con escritura `dd/mm/aaaa` y calendario; el nacimiento abre directamente la selección de año. Los filtros de grupo y periodo usan menús con estilo uniforme. `Elegir rango` permite seleccionar o escribir Desde/Hasta, con accesos al ciclo completo o al mes de la fecha inicial; valida límites y orden antes de aplicar. Los diálogos se ajustan al ancho disponible y permiten desplazamiento en móviles.
 
-**Toma de asistencia:** incluye búsqueda por nombre, presentes/ausentes y barra de participación. La búsqueda conserva las marcas de personas ocultas; `Marcar todos` y `Desmarcar todos` se aplican a todo el grupo.
+**Toma de asistencia:** muestra directamente la lista del grupo, presentes/ausentes y barra de participación, sin buscador interno. `Marcar todos` y `Desmarcar todos` se aplican a todo el grupo.
+
+**Rendimiento:** las consultas exitosas se conservan en memoria durante cinco minutos para reutilizarlas al navegar. Guardar datos o cambiar de cuenta invalida las cachés correspondientes; las marcas editables de asistencia siempre se consultan al abrir el formulario. El botón `Actualizar datos` permite consultar cambios de otros usuarios. El directorio muestra 30 integrantes por página y Tesorería 20 movimientos por página. Ver [mediciones y reglas de caché](docs/PERFORMANCE.md).
 
 **Actualización — registro de integrantes:** disponible en `Integrantes → Nuevo integrante` para perfiles `admin` y `secretaria`. Incluye nombre, nacimiento, edad automática, grupo, rol y fecha de ingreso. Guarda mediante la RPC `crear_integrante` y actualiza el directorio. Sin Supabase se puede abrir el formulario en vista previa, con guardado deshabilitado. Las pantallas de edición/baja y traslado siguen pendientes.
 

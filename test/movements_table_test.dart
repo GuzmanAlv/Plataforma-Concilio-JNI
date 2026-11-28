@@ -7,6 +7,49 @@ import 'package:concilio_jni_dreamrs/features/treasury/domain/treasury.dart';
 import 'package:concilio_jni_dreamrs/features/treasury/presentation/movements_table.dart';
 
 void main() {
+  testWidgets(
+    'Large movement lists render only one page and retain access to all rows',
+    (tester) async {
+      final expenses = List.generate(
+        45,
+        (i) => Expense(
+          id: 'e$i',
+          date: CivilDate(2026, 11, 1).addDays(i),
+          amount: Money.parse('10'),
+          name: 'Gasto $i',
+          concept: 'Materiales',
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MovementsTable(
+                offerings: const [],
+                expenses: expenses,
+                filter: PeriodFilter.all(),
+                onEdit: (_) {},
+                onReceipt: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.widget<DataTable>(find.byType(DataTable)).rows.length, 20);
+      expect(find.text('Gasto 44'), findsOneWidget);
+      expect(find.text('Gasto 0'), findsNothing);
+      await tester.ensureVisible(find.byTooltip('Movimientos siguientes'));
+      await tester.tap(find.byTooltip('Movimientos siguientes'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<DataTable>(find.byType(DataTable)).rows.length, 20);
+      await tester.ensureVisible(find.byTooltip('Movimientos siguientes'));
+      await tester.tap(find.byTooltip('Movimientos siguientes'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<DataTable>(find.byType(DataTable)).rows.length, 5);
+      expect(find.text('Gasto 0'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('Movement table shows expense form fields and opens editing', (
     tester,
   ) async {

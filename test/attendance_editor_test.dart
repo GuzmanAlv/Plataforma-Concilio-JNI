@@ -69,6 +69,8 @@ void main() {
     );
     await tester.tap(find.text('Abrir'));
     await tester.pumpAndSettle();
+    expect(find.text('Buscar integrante'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
     expect(
       tester
           .widget<CheckboxListTile>(
